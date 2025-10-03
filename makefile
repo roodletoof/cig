@@ -1,6 +1,6 @@
 
 CC := gcc
-CFLAGS := -Wall -Wextra -O2 -fsanitize=address
+CFLAGS := -Wall -Wextra -Wno-override-init -O2 -fsanitize=address
 LDFLAGS := -lcriterion
 
 TESTBIN := /tmp/all_tests
