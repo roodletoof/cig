@@ -5,3 +5,19 @@ snippet testfile
 	Test($1, $2) {
 		$0
 	}
+
+snippet allocator
+	#include "allocator.h"
+
+	static void *${1}_alloc(void *this, size_t bytes, const char *file, int line) {
+	}
+	static void *${1}_resize(void *this, void *old_ptr, size_t bytes, const char *file, int line) {
+	}
+	static void ${1}_free(void *this, void *ptr, const char *file, int line) {
+	}
+
+	static const allocator_vtbl_t ${1}_vtbl = {
+		.alloc = ${1}_alloc,
+		.resize = ${1}_resize,
+		.free = ${1}_free,
+	};
