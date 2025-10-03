@@ -1,14 +1,10 @@
-# Makefile
 
-# Compiler and flags
 CC := gcc
-CFLAGS := -Wall -Wextra -O2
+CFLAGS := -Wall -Wextra -O2 -fsanitize=address
 LDFLAGS := -lcriterion
 
-# Output binary
 TESTBIN := /tmp/all_tests
 
-# Phony target
 .PHONY: test
 
 test:
