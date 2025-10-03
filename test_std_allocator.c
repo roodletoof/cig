@@ -1,6 +1,6 @@
 #include <criterion/criterion.h>
-#define ALLOCATOR_IMPLEMENTATION
 #include "allocator.h"
+
 
 Test(std_allocator, test) {
     allocator_t this = allocator_stdlib;

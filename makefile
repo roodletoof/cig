@@ -18,7 +18,7 @@ test:
 		echo "No test files found!"; \
 	else \
 		echo "Compiling all test files into $(TESTBIN)..."; \
-		$(CC) $(CFLAGS) $$files -o $(TESTBIN) $(LDFLAGS); \
+		$(CC) $(CFLAGS) _allocator_impl.c $$files -o $(TESTBIN) $(LDFLAGS); \
 		echo "Running tests..."; \
 		$(TESTBIN); \
 	fi
