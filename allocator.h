@@ -31,8 +31,6 @@ extern const allocator_t allocator_stdlib;
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
-// convenience functions ///////////////////////////////////////////////////////
-
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
 	return this.vtbl->alloc(this.this, bytes, file, line);
 }
@@ -43,28 +41,7 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 	this.vtbl->free(this.this, ptr, file, line);
 }
 
-// allocator_stdlib ////////////////////////////////////////////////////////////
-
-static void *stdlib_alloc(void *_, size_t bytes, const char *_, int _) {
-	return malloc(bytes);
-}
-static void *stdlib_resize(void *_, void *old_ptr, size_t bytes, const char *_, int _) {
-	return realloc(old_ptr, bytes);
-}
-static void stdlib_free(void *_, void *ptr, const char *_, int _) {
-	free(ptr);
-}
-
-static const allocator_vtbl_t stdlib_vtbl = {
-	.alloc = stdlib_alloc,
-	.resize = stdlib_resize,
-	.free = stdlib_free,
-};
-
-const allocator_t allocator_stdlib = (allocator_t) {
-	.this=NULL,
-	.vtbl=&stdlib_vtbl,
-};
+#include "std_allocator.c"
 
 #endif // ALLOCATOR_IMPLEMENTATION
 #endif // ALLOCATOR_H
