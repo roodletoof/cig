@@ -2,7 +2,10 @@
 #define ALLOCATOR_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
+
+#define MAX_ALIGN (sizeof(union { char c; int i; long l; long long ll; float f; double d; void *p; }))
 
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.
@@ -27,7 +30,23 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 #define allocator_resize(this, old_ptr, bytes) allocator_resize_func(this, old_ptr, bytes, __FILE__, __LINE__)
 #define allocator_free(this, ptr) allocator_free_func(this, ptr, __FILE__, __LINE__)
 
+// std_allocator ///////////////////////////////////////////////////////////////
 extern const allocator_t allocator_stdlib;
+// buffer_allocator ////////////////////////////////////////////////////////////
+typedef struct buffer_allocator {
+    size_t size, capacity;
+    uint8_t *data;
+} buffer_allocator_t;
+
+#define buffer_allocator_stack_create(CAPACITY)                                       \
+  ((buffer_allocator_t){                                                       \
+      .size = 0, .capacity = CAPACITY, .data = (uint8_t[CAPACITY]){}})
+
+buffer_allocator_t *buffer_allocator_heap_create(allocator_t alloc, size_t capacity);
+void buffer_allocator_heap_destroy(allocator_t alloc, buffer_allocator_t *this);
+// TODO: maybe use the macro magic to use the standard allcocator as the default
+// one? or make users define a STANDARD_ALLOCATOR value? need to think about the
+// consequenses
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
@@ -42,6 +61,7 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 }
 
 #include "std_allocator.c"
+#include "buffer_allocator.c"
 
 #endif // ALLOCATOR_IMPLEMENTATION
 #endif // ALLOCATOR_H
