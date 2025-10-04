@@ -7,7 +7,7 @@ TESTBIN := /tmp/all_tests
 
 .PHONY: test
 
-test: tags
+test:
 	@echo "Discovering test files..."
 	@files=$$(find . -type f -name 'test*.c'); \
 	if [ -z "$$files" ]; then \
