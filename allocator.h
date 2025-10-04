@@ -6,6 +6,9 @@
 #include <stdlib.h>
 
 #define MAX_ALIGN (sizeof(union { char c; int i; long l; long long ll; float f; double d; void *p; }))
+#define KB (1024)
+#define MB (KB * KB)
+#define GB (KB * KB * KB)
 
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.
@@ -38,7 +41,7 @@ typedef struct buffer_allocator {
     uint8_t *data;
 } buffer_allocator_t;
 
-#define buffer_allocator_stack_create(CAPACITY)                                       \
+#define buffer_allocator_stack_create(CAPACITY)                                \
   ((buffer_allocator_t){                                                       \
       .size = 0, .capacity = CAPACITY, .data = (uint8_t[CAPACITY]){}})
 
