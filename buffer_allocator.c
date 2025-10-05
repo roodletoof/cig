@@ -5,7 +5,7 @@ void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes) {
     if (new_size > this->capacity) {
         return NULL;
     }
-    void *ptr = &this->data[this->size]
+    void *ptr = &this->data[this->size];
     this->size = new_size;
     return ptr;
 }
