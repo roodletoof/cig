@@ -41,15 +41,17 @@ typedef struct buffer_allocator {
     uint8_t *data;
 } buffer_allocator_t;
 
-#define buffer_allocator_stack_create(CAPACITY)                                \
-  ((buffer_allocator_t){                                                       \
+#define buffer_allocator_create(CAPACITY) \
+  ((buffer_allocator_t){ \
       .size = 0, .capacity = CAPACITY, .data = (uint8_t[CAPACITY]){}})
 
-buffer_allocator_t *buffer_allocator_heap_create(allocator_t alloc, size_t capacity);
-void buffer_allocator_heap_destroy(allocator_t alloc, buffer_allocator_t *this);
-// TODO: maybe use the macro magic to use the standard allcocator as the default
-// one? or make users define a STANDARD_ALLOCATOR value? need to think about the
-// consequenses
+allocator_t buffer_allocator_interface(buffer_allocator_t *this);
+void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes);
+// Very simple resize. Does not free any memory, nor does it keep track of the
+// previously allocated size of the old_pointer, just copies over as few bytes
+// as it can with the information it has to a new allocation.
+void *buffer_allocator_resize(buffer_allocator_t *this, void *old_ptr, size_t bytes);
+void buffer_allocator_reset(buffer_allocator_t *this);
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
