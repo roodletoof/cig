@@ -11,12 +11,16 @@ void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes) {
 }
 
 void *buffer_allocator_resize(buffer_allocator_t *this, void *old_ptr, size_t bytes) {
-    // TODO: check if the pointer is even in the buffer?
     void *new_ptr = buffer_allocator_alloc(this, bytes);
     if (new_ptr == NULL) {
         return NULL;
     }
-    // TODO: copy over data
+    for (size_t i = 0; i < bytes; i++) {
+        unsigned char *new_ptr_b = (unsigned char *)new_ptr;
+        unsigned char *old_ptr_b = (unsigned char *)old_ptr;
+        new_ptr_b[i] = old_ptr_b[i];
+    }
+    return new_ptr;
 }
 
 void buffer_allocator_reset(buffer_allocator_t *this) {
@@ -30,12 +34,9 @@ static void *buffer_alloc(void *this, size_t bytes, const char *file, int line) 
 }
 
 static void *buffer_resize(void *this, void *old_ptr, size_t bytes, const char *file, int line) {
-    (void)old_ptr;
     (void)file;
     (void)line;
-
-    // TODO: do the concrete implementation first!
-    void *new_ptr = buffer_allocator_alloc((buffer_allocator_t *)this, bytes);
+    return buffer_allocator_resize(this, old_ptr, bytes);
 }
 
 static void buffer_free(void *this, void *ptr, const char *file, int line) {
@@ -52,4 +53,8 @@ static const allocator_vtbl_t buffer_vtbl = {
 };
 
 allocator_t buffer_allocator_interface(buffer_allocator_t *this) {
+    return (allocator_t) {
+        .this=this,
+        .vtbl=&buffer_vtbl,
+    };
 }
