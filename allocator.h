@@ -5,7 +5,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define MAX_ALIGN (sizeof(union { char c; int i; long l; long long ll; float f; double d; void *p; }))
+typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; } any_align_t;
+#define MAX_ALIGN (sizeof(any_align_t))
 #define KB (1024)
 #define MB (KB * KB)
 #define GB (KB * KB * KB)
@@ -53,6 +54,23 @@ void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes);
 void *buffer_allocator_resize(buffer_allocator_t *this, void *old_ptr, size_t bytes);
 void buffer_allocator_reset(buffer_allocator_t *this);
 
+// borrow_allocator ////////////////////////////////////////////////////////////
+typedef struct linked_allocation_node {
+    struct linked_allocation_node *next;
+    struct linked_allocation_node *prev;
+    any_align_t data[];
+} linked_allocation_node_t;
+
+typedef struct borrow_allocator {
+    linked_allocation_node_t *head;
+} borrow_allocator_t;
+
+#define borrow_allocator_create() ((borrow_allocator_t){.head=NULL})
+
+void *borrow_allcoator_alloc(borrow_allocator_t *this, size_t bytes);
+void *borrow_allcoator_resize(borrow_allocator_t *this, void *old_ptr, size_t bytes);
+void borrow_allcoator_free(borrow_allocator_t *this, void *old_ptr);
+
 #ifdef ALLOCATOR_IMPLEMENTATION
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
@@ -67,6 +85,7 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 
 #include "std_allocator.c"
 #include "buffer_allocator.c"
+#include "borrow_allocator.c"
 
 #endif // ALLOCATOR_IMPLEMENTATION
 #endif // ALLOCATOR_H
