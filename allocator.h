@@ -10,6 +10,9 @@ typedef union any_align { char c; int i; long l; long long ll; float f; double d
 #define KB (1024)
 #define MB (KB * KB)
 #define GB (KB * KB * KB)
+#define OFFSET(STRUCT, FIELD) ((size_t) (&((STRUCT*) NULL)->FIELD))
+#define PTR_FROM_FIELD_PTR(STRUCT, FIELD, PTR) ((STRUCT *) (((char *) PTR) - OFFSET(STRUCT, FIELD)))
+
 
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.
