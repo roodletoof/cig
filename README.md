@@ -22,4 +22,9 @@ which are a c superpower in this scenario. You will essentially start with some
 'fixed' rectangle (probably derived from the window size) and then perform
 splitting operations on that rectangle. Even a dynamic split that creates a
 draggable border, updating the local function-static variable (which is a
-normalized float) to let you resize sections.
+normalized float) to let you resize sections. Also, the interface will be like
+immediate mode guis, with one exception from the way raygui works. The drawing
+operations are deferred, and called in the reverse order. This way the first
+gui function that captrues input can signal to the other function that input is
+captured, and the drawing of the gui elements can reflect the priority of the
+gui functions. Overlapping gui elements in raygui is the main painpoint imo.
