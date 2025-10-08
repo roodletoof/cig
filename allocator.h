@@ -61,6 +61,8 @@ void buffer_allocator_reset(buffer_allocator_t *this);
 typedef struct linked_allocation_node {
     struct linked_allocation_node *next;
     struct linked_allocation_node *prev;
+    const char *file;
+    int line;
     any_align_t data[];
 } linked_allocation_node_t;
 
@@ -70,9 +72,19 @@ typedef struct borrow_allocator {
 
 #define borrow_allocator_create() ((borrow_allocator_t){.head=NULL})
 
-void *borrow_allcoator_alloc(borrow_allocator_t *this, size_t bytes);
-void *borrow_allcoator_resize(borrow_allocator_t *this, void *old_ptr, size_t bytes);
-void borrow_allcoator_free(borrow_allocator_t *this, void *old_ptr);
+void *borrow_allocator_alloc_func(borrow_allocator_t *this, size_t bytes, const char *file, int line);
+#define borrow_allocator_alloc(this, bytes) borrow_allocator_alloc_func(this, bytes, __FILE__, __LINE__)
+void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_ptr, size_t bytes, const char *file, int line);
+#define borrow_allocator_resize(this, old_ptr, bytes) borrow_allocator_resize_func(this, old_ptr, bytes, __FILE__, __LINE__)
+void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr);
+// Free all allocations done by this allocator.
+void borrow_allocator_reset(borrow_allocator_t *this);
+size_t borrow_allocator_count_allocations(borrow_allocator_t *this);
+// Check that all allocations have been freed, or print a list of files and
+// lines where made that haven't been freed to stderr and then exit the program
+// with 1 as the return value.
+void borrow_allocator_assert_all_freed(borrow_allocator_t *this);
+allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
