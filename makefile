@@ -1,6 +1,6 @@
 
 CC := gcc
-CFLAGS := -Wall -Wextra -Wno-override-init -O2 -fsanitize=address
+CFLAGS := -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline
 LDFLAGS := -lcriterion
 
 TESTBIN := /tmp/all_tests
@@ -16,7 +16,7 @@ test:
 		echo "Compiling all test files into $(TESTBIN)..."; \
 		$(CC) $(CFLAGS) _allocator_impl.c $$files -o $(TESTBIN) $(LDFLAGS); \
 		echo "Running tests..."; \
-		$(TESTBIN); \
+		valgrind $(TESTBIN); \
 	fi
 
 
