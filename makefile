@@ -1,6 +1,6 @@
 
 CC := gcc
-CFLAGS := -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline
+CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline
 LDFLAGS := -lcriterion
 
 TESTBIN := /tmp/all_tests
@@ -14,7 +14,7 @@ test:
 		echo "No test files found!"; \
 	else \
 		echo "Compiling all test files into $(TESTBIN)..."; \
-		$(CC) $(CFLAGS) _allocator_impl.c $$files -o $(TESTBIN) $(LDFLAGS); \
+		$(CC) $(CFLAGS) _allocator_impl.c $$files -o $(TESTBIN) $(LDFLAGS) || exit 1; \
 		echo "Running tests..."; \
 		valgrind $(TESTBIN); \
 	fi

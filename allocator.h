@@ -38,7 +38,7 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 #define allocator_free(this, ptr) allocator_free_func(this, ptr, __FILE__, __LINE__)
 
 // std_allocator ///////////////////////////////////////////////////////////////
-extern const allocator_t allocator_stdlib;
+allocator_t allocator_stdlib();
 // buffer_allocator ////////////////////////////////////////////////////////////
 typedef struct buffer_allocator {
     size_t size, capacity;
@@ -47,7 +47,7 @@ typedef struct buffer_allocator {
 
 #define buffer_allocator_create(CAPACITY) \
   ((buffer_allocator_t){ \
-      .size = 0, .capacity = CAPACITY, .data = (uint8_t[CAPACITY]){}})
+      .size = 0, .capacity = CAPACITY, .data = (uint8_t[CAPACITY]){0}})
 
 allocator_t buffer_allocator_interface(buffer_allocator_t *this);
 void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes);

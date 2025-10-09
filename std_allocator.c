@@ -25,8 +25,10 @@ static const allocator_vtbl_t stdlib_vtbl = {
     .free = stdlib_free,
 };
 
-const allocator_t allocator_stdlib = (allocator_t) {
-    .this=NULL,
-    .vtbl=&stdlib_vtbl,
-};
+allocator_t allocator_stdlib() {
+    return (allocator_t) {
+        .this=NULL,
+        .vtbl=&stdlib_vtbl,
+    };
+}
 
