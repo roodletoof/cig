@@ -12,3 +12,12 @@ Test(borrow_allocator, test) {
     cr_assert_eq(0, borrow_allocator_count_allocations(&balloc));
     borrow_allocator_assert_all_freed(&balloc);
 }
+
+
+Test(borrow_allocator, with) {
+    with_borrow(foo) {
+        allocator_alloc(foo, 1000);
+        allocator_alloc(foo, 100);
+        allocator_alloc(foo, 90);
+    }
+}

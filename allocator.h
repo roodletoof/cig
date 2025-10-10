@@ -86,6 +86,17 @@ size_t borrow_allocator_count_allocations(borrow_allocator_t *this);
 void borrow_allocator_assert_all_freed(borrow_allocator_t *this);
 allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 
+// Some text that can be used as an identifier (no, not by you), so that I can
+// use a variable that won't collide with yours inside macros.
+#define UNIQUE __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef6__
+
+// Using the return a keyword in the statement following this macro will cause
+// a guaranteed memory leak.
+#define with_borrow(NAME) \
+    borrow_allocator_t UNIQUE = borrow_allocator_create(); \
+    for (allocator_t NAME = borrow_allocator_interface(&UNIQUE); !UNIQUE.head; UNIQUE.head = (borrow_allocator_reset(&UNIQUE), (linked_allocation_node_t*) 1)) \
+    for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
+
 #ifdef ALLOCATOR_IMPLEMENTATION
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
