@@ -1,3 +1,7 @@
+# ISSUES
+No matter what I do it says that there are 2666 allocations or something. This
+is concerning.
+
 # A collection of libraries inspired by zig
 
 I like zig, but I really like writing C. I am starting with implementing
