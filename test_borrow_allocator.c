@@ -14,10 +14,13 @@ Test(borrow_allocator, test) {
 }
 
 
+// TODO: when I update the number of allocations it does not seem to change the
+// number of allocated bytes...
 Test(borrow_allocator, with) {
     with_borrow(foo) {
         allocator_alloc(foo, 1000);
         allocator_alloc(foo, 100);
         allocator_alloc(foo, 90);
+        break;
     }
 }
