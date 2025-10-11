@@ -23,4 +23,5 @@ Test(macro_magic, default_values) {
     cr_assert_eq(a1.is_true, true);
     cr_assert_eq(a2.is_true, true);
     cr_assert_eq(a3.is_true, false);
+    malloc(100);
 }
