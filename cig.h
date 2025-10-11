@@ -100,6 +100,22 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
     for (allocator_t NAME = borrow_allocator_interface(&borrow_allocator_create()); !((borrow_allocator_t*)NAME.this)->head; ((borrow_allocator_t*)NAME.this)->head = (borrow_allocator_reset(((borrow_allocator_t*)NAME.this)), (linked_allocation_node_t*) 1)) \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
+// dynamic arrays //////////////////////////////////////////////////////////////
+typedef struct dyn_array_header {
+    size_t size, capacity, itemsize;
+    allocator_t allocator;
+    uint8_t bytes[];
+} dyn_array_header_t;
+
+typedef struct dyn_array_create_func_args {
+    allocator_t allocator;
+    size_t itemsize;
+    size_t initial_capacity;
+} dyn_array_create_func_args_t;
+void *dyn_array_create_func(dyn_array_create_func_args_t args);
+#define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func())
+// TODO finish this
+
 #ifdef ALLOCATOR_IMPLEMENTATION
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
