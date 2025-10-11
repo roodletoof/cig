@@ -11,11 +11,15 @@ Test(borrow_allocator, test) {
     borrow_allocator_reset(&balloc);
     cr_assert_eq(0, borrow_allocator_count_allocations(&balloc));
     borrow_allocator_assert_all_freed(&balloc);
+    void *foobar = malloc(1000);
+    (void)foobar;
 }
 
 #define IS_SIZE 900
 Test(borrow_allocator, with) {
     with_borrow(foo) {
+        with_borrow(bar) {
+        } 
         int *is = allocator_alloc(foo, sizeof(int) * IS_SIZE);
         for (int i = 0; i < IS_SIZE; i++) is[i] = i;
         is = allocator_alloc(foo, sizeof(int) * IS_SIZE);

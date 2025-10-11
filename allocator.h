@@ -93,8 +93,7 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 // Using the return a keyword in the statement following this macro will cause
 // a guaranteed memory leak.
 #define with_borrow(NAME) \
-    borrow_allocator_t UNIQUE = borrow_allocator_create(); \
-    for (allocator_t NAME = borrow_allocator_interface(&UNIQUE); !UNIQUE.head; UNIQUE.head = (borrow_allocator_reset(&UNIQUE), (linked_allocation_node_t*) 1)) \
+    for (allocator_t NAME = borrow_allocator_interface(&borrow_allocator_create()); !((borrow_allocator_t*)NAME.this)->head; ((borrow_allocator_t*)NAME.this)->head = (borrow_allocator_reset(((borrow_allocator_t*)NAME.this)), (linked_allocation_node_t*) 1)) \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
 #ifdef ALLOCATOR_IMPLEMENTATION

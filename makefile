@@ -16,7 +16,7 @@ test:
 		echo "Compiling all test files into $(TESTBIN)..."; \
 		$(CC) $(CFLAGS) _allocator_impl.c $$files -o $(TESTBIN) $(LDFLAGS) || exit 1; \
 		echo "Running tests..."; \
-		valgrind $(TESTBIN); \
+		valgrind --trace-children=yes $(TESTBIN); \
 	fi
 
 
