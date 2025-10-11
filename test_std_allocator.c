@@ -1,5 +1,5 @@
 #include <criterion/criterion.h>
-#include "allocator.h"
+#include "cig.h"
 
 
 Test(std_allocator, test) {

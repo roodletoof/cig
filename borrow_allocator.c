@@ -1,4 +1,4 @@
-#include "allocator.h"
+#include "cig.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

@@ -1,5 +1,5 @@
 #include <criterion/criterion.h>
-#include "allocator.h"
+#include "cig.h"
 
 #define EXPECT 5
 Test(borrow_allocator, test) {
@@ -11,8 +11,6 @@ Test(borrow_allocator, test) {
     borrow_allocator_reset(&balloc);
     cr_assert_eq(0, borrow_allocator_count_allocations(&balloc));
     borrow_allocator_assert_all_freed(&balloc);
-    void *foobar = malloc(1000);
-    (void)foobar;
 }
 
 #define IS_SIZE 900

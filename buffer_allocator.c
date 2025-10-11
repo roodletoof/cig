@@ -1,4 +1,4 @@
-#include "allocator.h"
+#include "cig.h"
 
 void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes) {
     size_t new_size = this->size + bytes;

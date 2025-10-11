@@ -2,4 +2,4 @@
 // the test files are compiled together.
 
 #define ALLOCATOR_IMPLEMENTATION
-#include "allocator.h"
+#include "cig.h"

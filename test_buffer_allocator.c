@@ -1,5 +1,5 @@
 #include <criterion/criterion.h>
-#include "allocator.h"
+#include "cig.h"
 
 static void test_buffer_alloc(buffer_allocator_t impl) {
     allocator_t inter = buffer_allocator_interface(&impl);

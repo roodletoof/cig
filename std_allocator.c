@@ -1,4 +1,4 @@
-#include "allocator.h"
+#include "cig.h"
 
 static void *stdlib_alloc(void *this, size_t bytes, const char *file, int line) {
     (void)this;
