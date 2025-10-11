@@ -90,8 +90,12 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 // use a variable that won't collide with yours inside macros.
 #define UNIQUE __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef6__
 
-// Using the return a keyword in the statement following this macro will cause
-// a guaranteed memory leak.
+// Can be used to mimic rust borrow semantics. with_borrow(foos_allocator) {
+// foo(foos_allocator); }. If a function should return ownership assume that
+// my_allocator was passed in by an outer function void *bar;
+// with_borrow(foos_allocator) {bar = foo(foos_allocator, my_allocator); } Using
+// the return a keyword in the statement following this macro will cause a
+// guaranteed memory leak.
 #define with_borrow(NAME) \
     for (allocator_t NAME = borrow_allocator_interface(&borrow_allocator_create()); !((borrow_allocator_t*)NAME.this)->head; ((borrow_allocator_t*)NAME.this)->head = (borrow_allocator_reset(((borrow_allocator_t*)NAME.this)), (linked_allocation_node_t*) 1)) \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
