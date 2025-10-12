@@ -101,6 +101,7 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
 // dynamic arrays //////////////////////////////////////////////////////////////
+
 typedef struct dyn_array_header {
     size_t size, capacity, itemsize;
     allocator_t allocator;
@@ -111,9 +112,15 @@ typedef struct dyn_array_create_func_args {
     allocator_t allocator;
     size_t itemsize;
     size_t initial_capacity;
+    const char *file;
+    int line;
 } dyn_array_create_func_args_t;
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
-#define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), __VA_ARGS__}))
+#define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), .file=__FILE__, .line=__LINE__, __VA_ARGS__}))
+
+// Always reassign the array. if multiple variables reference the same growing
+// array, then you should be using pointer pointers.
+void *dyn_array_append_func(void *this, void *data);
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
