@@ -113,8 +113,7 @@ typedef struct dyn_array_create_func_args {
     size_t initial_capacity;
 } dyn_array_create_func_args_t;
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
-#define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func())
-// TODO finish this
+#define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), __VA_ARGS__}))
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
