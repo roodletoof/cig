@@ -117,10 +117,29 @@ typedef struct dyn_array_create_func_args {
 } dyn_array_create_func_args_t;
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
 #define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), .file=__FILE__, .line=__LINE__, __VA_ARGS__}))
-
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
-void *dyn_array_append_func(void *this, void *data);
+void *dyn_array_append_func(void *this, void *item, const char *file, int line);
+#define dyn_array_append(THIS, ITEM) dyn_array_append_func(THIS, &(ITEM), __FILE__, __LINE__)
+
+typedef struct dyn_array_create_non_crashing_func_args {
+    allocator_t allocator;
+    size_t itemsize;
+    size_t initial_capacity;
+} dyn_array_create_non_crashing_func_args_t;
+void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args_t args);
+// This version returns a NULL pointer instead of crashing if the allocator return NULL.
+// It is up to you to check that the pointer returned isn't NULL
+#define dyn_array_create_non_crashing(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_non_crashing_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), __VA_ARGS__}))
+// This version returns a NULL pointer instead of crashing if the allocator return NULL.
+// It is up to you to check that the pointer returned isn't NULL
+// Always reassign the array. if multiple variables reference the same growing
+// array, then you should be using pointer pointers.
+void *dyn_array_append_non_crashing_func(void *this, void *item);
+#define dyn_array_append_non_crashing(THIS, ITEM) dyn_array_append_non_crashing_func(THIS, &(ITEM))
+
+size_t dyn_array_length(void *this);
+size_t dyn_array_capacity(void *this);
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
@@ -137,6 +156,7 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 #include "std_allocator.c"
 #include "buffer_allocator.c"
 #include "borrow_allocator.c"
+#include "dyn_array.c"
 
 #endif // ALLOCATOR_IMPLEMENTATION
 #endif // ALLOCATOR_H
