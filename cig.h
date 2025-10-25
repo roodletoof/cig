@@ -96,8 +96,13 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 // with_borrow(foos_allocator) {bar = foo(foos_allocator, my_allocator); } Using
 // the return a keyword in the statement following this macro will cause a
 // guaranteed memory leak.
-#define with_borrow(NAME) \
-    for (allocator_t NAME = borrow_allocator_interface(&borrow_allocator_create()); !((borrow_allocator_t*)NAME.this)->head; ((borrow_allocator_t*)NAME.this)->head = (borrow_allocator_reset(((borrow_allocator_t*)NAME.this)), (linked_allocation_node_t*) 1)) \
+#define with_borrow(NAME)                                                      \
+  for (allocator_t NAME =                                                      \
+           borrow_allocator_interface(&borrow_allocator_create());             \
+       !((borrow_allocator_t *)NAME.this)->head;                               \
+       ((borrow_allocator_t *)NAME.this)->head =                               \
+           (borrow_allocator_reset(((borrow_allocator_t *)NAME.this)),         \
+            (linked_allocation_node_t *)1))                                    \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
 // dynamic arrays //////////////////////////////////////////////////////////////
@@ -119,8 +124,8 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args);
 #define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), .file=__FILE__, .line=__LINE__, __VA_ARGS__}))
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
-void *dyn_array_append_func(void *this, void *item, const char *file, int line);
-#define dyn_array_append(THIS, ITEM) dyn_array_append_func(THIS, &(ITEM), __FILE__, __LINE__)
+void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line);
+#define dyn_array_grow(THIS, N_NEW_ITEMS) dyn_array_grow_func(THIS, N_NEW_ITEMS, __FILE__, __LINE__)
 
 typedef struct dyn_array_create_non_crashing_func_args {
     allocator_t allocator;
@@ -135,8 +140,8 @@ void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args
 // It is up to you to check that the pointer returned isn't NULL
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
-void *dyn_array_append_non_crashing_func(void *this, void *item);
-#define dyn_array_append_non_crashing(THIS, ITEM) dyn_array_append_non_crashing_func(THIS, &(ITEM))
+void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items);
+#define dyn_array_grow_non_crashing(THIS, N_NEW_ITEMS) dyn_array_grow_non_crashing_func(THIS, N_NEW_ITEMS)
 
 size_t dyn_array_length(void *this);
 size_t dyn_array_capacity(void *this);

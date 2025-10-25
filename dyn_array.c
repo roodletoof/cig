@@ -21,16 +21,15 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args) {
     return bytes;
 }
 
-void *dyn_array_append_func(void *this, void *item, const char *file, int line) {
-    void *bytes = dyn_array_append_non_crashing_func(this, item);
+void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line) {
+    void *bytes = dyn_array_grow_non_crashing_func(this, n_new_items);
     if (bytes == NULL) {
-        fprintf(
+        fpritnf(
             stderr,
             "%s:%d: allocator returned NULL\n",
             file,
             line
         );
-        exit(1);
     }
     return bytes;
 }
@@ -48,11 +47,16 @@ void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args
     return &header->bytes;
 }
 
-void *dyn_array_append_non_crashing_func(void *this, void *item) {
+void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items) {
     dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-    if (header->capacity <= header->size) {
-        size_t new_capacity = header->capacity * 2;
-        if (new_capacity == 0) { new_capacity = 1; }
+    size_t new_size = header->size + n_new_items;
+
+    if (header->capacity < new_size) {
+        size_t cap_times_2 = header->capacity * 2;
+        size_t new_capacity =
+            cap_times_2 > new_size
+            ? cap_times_2
+            : new_size;
         header = allocator_resize(
             header->allocator,
             header,
@@ -61,18 +65,7 @@ void *dyn_array_append_non_crashing_func(void *this, void *item) {
         if (header == NULL) { return NULL; }
         header->capacity = new_capacity;
     }
-    &header->bytes[header->itemsize*header->size]
-// typedef struct dyn_array_header {
-//     size_t size, capacity, itemsize;
-//     allocator_t allocator;
-//     uint8_t bytes[];
-// } dyn_array_header_t;
-
-// TODO: this is not good. the type has to be passed into the macro or
-// something because passing in an integer does not work. it won't know to cast
-// it to a char, int, long, whatever, so the bytes will be fucked. Either the
-// macro can take the type to cast the value into the type, or we can just have
-// some grow function instead...
+    return &header->bytes
 }
 
 size_t dyn_array_length(void *this) {
