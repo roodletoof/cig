@@ -1,6 +1,6 @@
 
 CC := gcc
-CFLAGS := -std=c99 -pedantic -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline
+CFLAGS := -pedantic -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline
 LDFLAGS := -lcriterion
 
 TESTBIN := /tmp/all_tests

@@ -24,7 +24,7 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args) {
 void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line) {
     void *bytes = dyn_array_grow_non_crashing_func(this, n_new_items);
     if (bytes == NULL) {
-        fpritnf(
+        fprintf(
             stderr,
             "%s:%d: allocator returned NULL\n",
             file,
@@ -54,9 +54,9 @@ void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items) {
     if (header->capacity < new_size) {
         size_t cap_times_2 = header->capacity * 2;
         size_t new_capacity =
-            cap_times_2 > new_size
-            ? cap_times_2
-            : new_size;
+            cap_times_2 < new_size
+            ? new_size
+            : cap_times_2;
         header = allocator_resize(
             header->allocator,
             header,
@@ -65,15 +65,30 @@ void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items) {
         if (header == NULL) { return NULL; }
         header->capacity = new_capacity;
     }
-    return &header->bytes
+    return &header->bytes;
+}
+
+void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *file, int line) {
+    if (dyn_array_length(this) < n_items_to_remove) {
+        fprintf(
+            stderr,
+            "%s:%d: tried to remove more items than contained in dynamic array.\n",
+            file,
+            line
+        );
+        exit(1);
+    }
+    dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+    header->size -= n_items_to_remove;
 }
 
 size_t dyn_array_length(void *this) {
     dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+    return header->size;
+
 }
 
-size_t dyn_array_capacity(void *this); {
+size_t dyn_array_capacity(void *this) {
     dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+    return header->capacity;
 }
-
-

@@ -23,6 +23,6 @@ Test(macro_magic, default_values) {
     cr_assert_eq(a1.is_true, true);
     cr_assert_eq(a2.is_true, true);
     cr_assert_eq(a3.is_true, false);
-    malloc(100);
-    // TODO: make this shite crash the tests...
+    // TODO if there is an allocation error it does not actually cause a crash...
+    // FIX!!!
 }

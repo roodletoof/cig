@@ -25,9 +25,9 @@ typedef struct allocator_vtbl {
 // An instance of an allocator.
 typedef struct allocator {
     // pointer to the behind-the-scenes data that an allocator may store.
-    void *const this;
+    void *this;
     // pointer to the method implementations of an allocator.
-    const allocator_vtbl_t *const vtbl;
+    const allocator_vtbl_t *vtbl;
 } allocator_t;
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line);
@@ -125,7 +125,18 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args);
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
 void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line);
-#define dyn_array_grow(THIS, N_NEW_ITEMS) dyn_array_grow_func(THIS, N_NEW_ITEMS, __FILE__, __LINE__)
+void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *file, int line);
+
+#define dyn_array_grow(THIS, N_NEW_ITEMS)                                      \
+  dyn_array_grow_func(THIS, N_NEW_ITEMS, __FILE__, __LINE__)
+
+#define dyn_array_shrink(THIS, N_ITEMS_TO_REMOVE)                              \
+  dyn_array_shrink_func(THIS, N_ITEMS_TO_REMOVE, __FILE__, __LINE__)
+
+#define dyn_array_reset(THIS)                                                  \
+  do {                                                                         \
+    dyn_array_shrink(THIS, dyn_array_length(THIS));                            \
+  } while (0)
 
 typedef struct dyn_array_create_non_crashing_func_args {
     allocator_t allocator;
@@ -136,6 +147,7 @@ void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args
 // This version returns a NULL pointer instead of crashing if the allocator return NULL.
 // It is up to you to check that the pointer returned isn't NULL
 #define dyn_array_create_non_crashing(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_non_crashing_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), __VA_ARGS__}))
+
 // This version returns a NULL pointer instead of crashing if the allocator return NULL.
 // It is up to you to check that the pointer returned isn't NULL
 // Always reassign the array. if multiple variables reference the same growing
@@ -145,6 +157,12 @@ void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items);
 
 size_t dyn_array_length(void *this);
 size_t dyn_array_capacity(void *this);
+#define dyn_array_append(THIS, VAL) do { \
+    THIS = dyn_array_grow(THIS, 1); \
+    THIS[dyn_array_length(THIS)-1] = VAL; \
+} while(0)
+
+#define dyn_array_pop(THIS) (dyn_array_shrink(THIS, 1), THIS[dyn_array_length(THIS)])
 
 #ifdef ALLOCATOR_IMPLEMENTATION
 
