@@ -38,7 +38,8 @@ Test(dynamic_arrays, pop) {
         dyn_array_append(numbers, 48);
         dyn_array_append(numbers, 49);
         dyn_array_append(numbers, 50);
-        for (int i = 0; i < (int)dyn_array_length(numbers); i++) {
+        int len = (int)dyn_array_length(numbers);
+        for (int i = 0; i < len; i++) {
             int num = dyn_array_pop(numbers);
             cr_assert_eq(num, 50-i);
         }
