@@ -38,6 +38,10 @@ Test(dynamic_arrays, pop) {
         dyn_array_append(numbers, 48);
         dyn_array_append(numbers, 49);
         dyn_array_append(numbers, 50);
+        // NOTE: you can stack for loops to have scoped variables you can abuse
+        // in macros. e.g.
+        // for (TYPE UNIQUE = (int)dyn_array_length(numbers); UNIQUE != 0; UNIQUE = 0;)
+        //     for (int i = 0, i < UNIQUE; i++)
         int len = (int)dyn_array_length(numbers);
         for (int i = 0; i < len; i++) {
             int num = dyn_array_pop(numbers);
