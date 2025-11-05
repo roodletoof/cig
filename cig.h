@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; } any_align_t;
+typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; long double ld; } any_align_t;
 #define MAX_ALIGN (sizeof(any_align_t))
 #define KB (1024)
 #define MB (KB * KB)
@@ -105,6 +105,31 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
             (linked_allocation_node_t *)1))                                    \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
+// arena allocators ////////////////////////////////////////////////////////////
+
+// The idea of this allocator is to allocate all required memory in a single
+// chunk. But it does not require you to know how much memory you need
+// beforehand. Instead the number of bytes allocated will be recorded and
+// updated, so that the whole thing can be reallocated as a single chunk that is
+// as large as it needs to be.
+typedef struct arena_allocator {
+    borrow_allocator_t borrow_allocator;
+    // Total size of bytes allocated. This allocator will only grow the
+    // allocated field as allocations are made, keeping track of the total
+    // memory allocated, and if the allocations have to be done in several
+    // chunks because your initial guess of how much memory was needed doesn't
+    // meet reality, all chunks will be freed, and then for the next
+    // initialization this total amount will be allocated as a single chunk.
+    // This freeing of memory happens on reset, the next alloc allocates the
+    // whole chunk.
+    size_t allocated;
+    // Initial chunk of memory to allocate.
+    size_t chunk_size;
+} arena_allocator_t;
+void *arena_allocator_alloc_func(arena_allocator_t *this, size_t bytes, const char *file, int line);
+#define arena_allocator_alloc(THIS, BYTES) arena_allocator_alloc_func(THIS, BYTES, __FILE__, __LINE__)
+// TODO finish this shite
+
 // dynamic arrays //////////////////////////////////////////////////////////////
 
 typedef struct dyn_array_header {
@@ -121,7 +146,13 @@ typedef struct dyn_array_create_func_args {
     int line;
 } dyn_array_create_func_args_t;
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
-#define dyn_array_create(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), .file=__FILE__, .line=__LINE__, __VA_ARGS__}))
+#define dyn_array_create(ALLOCATOR, TYPE, ...)                                 \
+  ((TYPE *)dyn_array_create_func(                                              \
+      (dyn_array_create_func_args_t){.allocator = ALLOCATOR,                   \
+                                     .itemsize = sizeof(TYPE),                 \
+                                     .file = __FILE__,                         \
+                                     .line = __LINE__,                         \
+                                     __VA_ARGS__}))
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
 void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line);
@@ -146,7 +177,9 @@ typedef struct dyn_array_create_non_crashing_func_args {
 void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args_t args);
 // This version returns a NULL pointer instead of crashing if the allocator return NULL.
 // It is up to you to check that the pointer returned isn't NULL
-#define dyn_array_create_non_crashing(ALLOCATOR, TYPE, ...) ((TYPE*) dyn_array_create_func((dyn_array_create_non_crashing_func_args_t){.allocator=ALLOCATOR, .itemsize=sizeof(TYPE), __VA_ARGS__}))
+#define dyn_array_create_non_crashing(ALLOCATOR, TYPE, ...)                    \
+  ((TYPE *)dyn_array_create_func((dyn_array_create_non_crashing_func_args_t){  \
+      .allocator = ALLOCATOR, .itemsize = sizeof(TYPE), __VA_ARGS__}))
 
 // This version returns a NULL pointer instead of crashing if the allocator return NULL.
 // It is up to you to check that the pointer returned isn't NULL
