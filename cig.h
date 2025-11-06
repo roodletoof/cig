@@ -127,7 +127,8 @@ typedef struct arena_allocator {
     size_t chunk_size;
 } arena_allocator_t;
 void *arena_allocator_alloc_func(arena_allocator_t *this, size_t bytes, const char *file, int line);
-#define arena_allocator_alloc(THIS, BYTES) arena_allocator_alloc_func(THIS, BYTES, __FILE__, __LINE__)
+#define arena_allocator_alloc(THIS, BYTES)                                     \
+  arena_allocator_alloc_func(THIS, BYTES, __FILE__, __LINE__)
 // TODO finish this shite
 
 // dynamic arrays //////////////////////////////////////////////////////////////
@@ -173,23 +174,31 @@ typedef struct dyn_array_create_non_crashing_func_args {
     allocator_t allocator;
     size_t itemsize;
     size_t initial_capacity;
+    const char *file;
+    size_t line;
 } dyn_array_create_non_crashing_func_args_t;
 void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args_t args);
 // This version returns a NULL pointer instead of crashing if the allocator return NULL.
 // It is up to you to check that the pointer returned isn't NULL
 #define dyn_array_create_non_crashing(ALLOCATOR, TYPE, ...)                    \
-  ((TYPE *)dyn_array_create_func((dyn_array_create_non_crashing_func_args_t){  \
-      .allocator = ALLOCATOR, .itemsize = sizeof(TYPE), __VA_ARGS__}))
+  ((TYPE *)dyn_array_create_non_crashing_func(                                 \
+      (dyn_array_create_non_crashing_func_args_t){.allocator = ALLOCATOR,      \
+                                                  .itemsize = sizeof(TYPE),    \
+                                                  .file = __FILE__,            \
+                                                  .line = __LINE__,            \
+                                                  __VA_ARGS__}))
 
 // This version returns a NULL pointer instead of crashing if the allocator return NULL.
 // It is up to you to check that the pointer returned isn't NULL
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
-void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items);
+void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items, const char *file, int line);
 #define dyn_array_grow_non_crashing(THIS, N_NEW_ITEMS) dyn_array_grow_non_crashing_func(THIS, N_NEW_ITEMS)
 
 size_t dyn_array_length(void *this);
 size_t dyn_array_capacity(void *this);
+void dyn_array_destroy(void *this);
+
 #define dyn_array_append(THIS, VAL) do { \
     THIS = dyn_array_grow(THIS, 1); \
     THIS[dyn_array_length(THIS)-1] = VAL; \

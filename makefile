@@ -19,7 +19,6 @@ test:
 		valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --error-exitcode=1 $(TESTBIN); \
 	fi
 
-
 PROJECT_ROOT := $(shell pwd)
 PROJECT_C_FILES := $(shell find $(PROJECT_ROOT) \( -name '*.c' -o -name '*.h' \))
 CRITERION_HEADERS := $(shell find /usr/include/criterion)

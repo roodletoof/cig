@@ -47,5 +47,6 @@ Test(dynamic_arrays, pop) {
             int num = dyn_array_pop(numbers);
             cr_assert_eq(num, 50-i);
         }
+        dyn_array_destroy(numbers);
     }
 }
