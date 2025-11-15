@@ -32,6 +32,7 @@ void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int 
             file,
             line
         );
+        exit(1);
     }
     return bytes;
 }
@@ -70,8 +71,8 @@ void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items, const cha
         );
         if (header == NULL) { return NULL; }
         header->capacity = new_capacity;
-        header->size = new_size;
     }
+    header->size = new_size;
     return &header->bytes;
 }
 
@@ -90,17 +91,20 @@ void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *fil
 }
 
 size_t dyn_array_length(void *this) {
+    if (this == NULL) { return 0; }
     dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
     return header->size;
 
 }
 
 size_t dyn_array_capacity(void *this) {
+    if (this == NULL) { return 0; }
     dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
     return header->capacity;
 }
 
 void dyn_array_destroy(void *this) {
+    if (this == NULL) { return; }
     dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
     allocator_free(header->allocator, header);
 }

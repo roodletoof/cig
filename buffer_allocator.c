@@ -1,6 +1,8 @@
 #include "cig.h"
 
 void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes) {
+    // TODO: use max-align
+    // also make the default function crash if outOf memory?
     size_t new_size = this->size + bytes;
     if (new_size > this->capacity) {
         return NULL;

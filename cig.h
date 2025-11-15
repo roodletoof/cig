@@ -122,14 +122,26 @@ typedef struct arena_allocator {
     // initialization this total amount will be allocated as a single chunk.
     // This freeing of memory happens on reset, the next alloc allocates the
     // whole chunk.
-    size_t allocated;
-    // Initial chunk of memory to allocate.
-    size_t chunk_size;
+    size_t total_allocated;
+    uint8_t *bytes;
 } arena_allocator_t;
-void *arena_allocator_alloc_func(arena_allocator_t *this, size_t bytes, const char *file, int line);
+#define arena_allocator_create()                                               \
+  (arena_allocator_t) {                                                        \
+    .borrow_allocator = borrow_allocator_create(), .total_allocated = 0,       \
+    .bytes = NULL                                                              \
+  }
+
+void *arena_allocator_alloc_func(
+    arena_allocator_t *this,
+    size_t bytes,
+    const char *file,
+    int line
+);
 #define arena_allocator_alloc(THIS, BYTES)                                     \
   arena_allocator_alloc_func(THIS, BYTES, __FILE__, __LINE__)
-// TODO finish this shite
+
+void arena_allocator_reset(arena_allocator_t *this);
+void arena_allocator_destroy(arena_allocator_t *this);
 
 // dynamic arrays //////////////////////////////////////////////////////////////
 

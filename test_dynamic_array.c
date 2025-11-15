@@ -38,6 +38,7 @@ Test(dynamic_arrays, pop) {
         dyn_array_append(numbers, 48);
         dyn_array_append(numbers, 49);
         dyn_array_append(numbers, 50);
+        cr_assert_eq(dyn_array_length(numbers), 11);
         // NOTE: you can stack for loops to have scoped variables you can abuse
         // in macros. e.g.
         // for (TYPE UNIQUE = (int)dyn_array_length(numbers); UNIQUE != 0; UNIQUE = 0;)

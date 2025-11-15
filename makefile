@@ -7,6 +7,13 @@ TESTBIN := /tmp/all_tests
 
 .PHONY: test
 
+run_test: test
+	$(TESTBIN)
+
+run_test_memcheck: test
+	valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --error-exitcode=1 $(TESTBIN); \
+	
+
 test:
 	@echo "Discovering test files..."
 	@files=$$(find . -type f -name 'test*.c'); \
@@ -15,8 +22,6 @@ test:
 	else \
 		echo "Compiling all test files into $(TESTBIN)..."; \
 		$(CC) $(CFLAGS) _allocator_impl.c $$files -o $(TESTBIN) $(LDFLAGS) || exit 1; \
-		echo "Running tests..."; \
-		valgrind --leak-check=full --show-leak-kinds=all --trace-children=yes --error-exitcode=1 $(TESTBIN); \
 	fi
 
 PROJECT_ROOT := $(shell pwd)
