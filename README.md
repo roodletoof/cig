@@ -31,3 +31,8 @@ are deferred, and called in the reverse order. This way the first gui function
 that captrues input can signal to the other function that input is captured,
 and the drawing of the gui elements can reflect the priority of the gui
 functions. Overlapping gui elements in raygui is the main painpoint imo.
+
+# TODO
+
+If there is an allocation error it does not actually cause a crash...
+FIX!!!

@@ -5,8 +5,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; long double ld; } any_align_t;
-#define MAX_ALIGN (sizeof(any_align_t))
+typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; } any_align_t;
+#define MAX_ALIGN ((size_t) sizeof(any_align_t))
 #define KB (1024)
 #define MB (KB * KB)
 #define GB (KB * KB * KB)
@@ -112,18 +112,23 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 // beforehand. Instead the number of bytes allocated will be recorded and
 // updated, so that the whole thing can be reallocated as a single chunk that is
 // as large as it needs to be.
+//
+// This basically exists for allocations that live for a single 'tick' of an
+// application.
+// It is intended to eventually stabilize and find the required size of the
+// memory chunk that is needed for a single frame.
 typedef struct arena_allocator {
-    borrow_allocator_t borrow_allocator;
-    // Total size of bytes allocated. This allocator will only grow the
-    // allocated field as allocations are made, keeping track of the total
-    // memory allocated, and if the allocations have to be done in several
-    // chunks because your initial guess of how much memory was needed doesn't
-    // meet reality, all chunks will be freed, and then for the next
-    // initialization this total amount will be allocated as a single chunk.
-    // This freeing of memory happens on reset, the next alloc allocates the
-    // whole chunk.
-    size_t total_allocated;
-    uint8_t *bytes;
+  borrow_allocator_t borrow_allocator;
+  // Total size of bytes allocated. This allocator will only grow the
+  // allocated field as allocations are made, keeping track of the total
+  // memory allocated, and if the allocations have to be done in several
+  // chunks because your initial guess of how much memory was needed doesn't
+  // meet reality, all chunks will be freed, and then for the next
+  // initialization this total amount will be allocated as a single chunk.
+  // This freeing of memory happens on reset, the next alloc allocates the
+  // whole chunk.
+  size_t total_allocated;
+  uint8_t *bytes;
 } arena_allocator_t;
 #define arena_allocator_create()                                               \
   (arena_allocator_t) {                                                        \
@@ -142,6 +147,7 @@ void *arena_allocator_alloc_func(
 
 void arena_allocator_reset(arena_allocator_t *this);
 void arena_allocator_destroy(arena_allocator_t *this);
+allocator_t arena_allocator_interface(arena_allocator_t *this);
 
 // dynamic arrays //////////////////////////////////////////////////////////////
 
@@ -234,6 +240,7 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 #include "buffer_allocator.c"
 #include "borrow_allocator.c"
 #include "dyn_array.c"
+#include "arena_allocator.c"
 
 #endif // ALLOCATOR_IMPLEMENTATION
 #endif // ALLOCATOR_H
