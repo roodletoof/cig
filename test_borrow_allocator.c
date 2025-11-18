@@ -8,7 +8,7 @@ Test(borrow_allocator, test) {
     *ptr = EXPECT;
     cr_assert_eq(*ptr, EXPECT);
     cr_assert_eq(1, borrow_allocator_count_allocations(&balloc));
-    borrow_allocator_reset(&balloc);
+    borrow_allocator_free_all(&balloc);
     cr_assert_eq(0, borrow_allocator_count_allocations(&balloc));
     borrow_allocator_assert_all_freed(&balloc);
 }

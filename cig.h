@@ -78,7 +78,7 @@ void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_ptr, size
 #define borrow_allocator_resize(this, old_ptr, bytes) borrow_allocator_resize_func(this, old_ptr, bytes, __FILE__, __LINE__)
 void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr);
 // Free all allocations done by this allocator.
-void borrow_allocator_reset(borrow_allocator_t *this);
+void borrow_allocator_free_all(borrow_allocator_t *this);
 size_t borrow_allocator_count_allocations(borrow_allocator_t *this);
 // Check that all allocations have been freed, or print a list of files and
 // lines where made that haven't been freed to stderr and then exit the program
@@ -101,7 +101,7 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
            borrow_allocator_interface(&borrow_allocator_create());             \
        !((borrow_allocator_t *)NAME.this)->head;                               \
        ((borrow_allocator_t *)NAME.this)->head =                               \
-           (borrow_allocator_reset(((borrow_allocator_t *)NAME.this)),         \
+           (borrow_allocator_free_all(((borrow_allocator_t *)NAME.this)),         \
             (linked_allocation_node_t *)1))                                    \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
@@ -145,7 +145,7 @@ void *arena_allocator_alloc_func(
 #define arena_allocator_alloc(THIS, BYTES)                                     \
   arena_allocator_alloc_func(THIS, BYTES, __FILE__, __LINE__)
 
-void arena_allocator_reset(arena_allocator_t *this);
+void arena_allocator_reset(arena_allocator_t *this, const char *file, int line);
 void arena_allocator_destroy(arena_allocator_t *this);
 allocator_t arena_allocator_interface(arena_allocator_t *this);
 

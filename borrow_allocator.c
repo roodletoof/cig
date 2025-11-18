@@ -46,7 +46,7 @@ void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr) {
     free(node);
 }
 
-void borrow_allocator_reset(borrow_allocator_t *this) {
+void borrow_allocator_free_all(borrow_allocator_t *this) {
     if (this->head == NULL) {
         return;
     }
