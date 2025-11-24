@@ -86,7 +86,26 @@ static void *arena_allocator_resize_impl(void *this, void *old_ptr, size_t bytes
     (void)this;
     (void)file;
     (void)line;
-    assert( false && "TODO: This is fucky. I need to see whether the allocation is in the buffer, if not then it is one of the borrow allocator nodes. I need an actual implementation here.");
+    assert(false && "TODO: This is fucky. I need to see whether the allocation "
+                    "is in the buffer, if not then it is one of the borrow "
+                    "allocator nodes. I need an actual implementation here.");
+    arena_allocator_t *t = (arena_allocator_t*) this;
+
+    if (
+        (size_t)t->bytes <= (size_t)old_ptr &&
+        (size_t)old_ptr < (size_t)t->bytes + dyn_array_length(t->bytes)
+    ) {
+      assert(false &&
+             "TODO: make new arena allocator implementation and copy from the "
+             "start of the old pointer until either the new size or until the "
+             "end of the bytes buffer. whichever is shorter.");
+    } else {
+        borrow_allocator_resize_func(&t->borrow_allocator, old_ptr, bytes, file, line);
+        // The bytes added to total_allocated is just an educated guess. If
+        // calling realloc, you are often allocating twice what you got from the
+        // last malloc/realloc call.
+        t->total_allocated += bytes/2;
+    }
     return realloc(old_ptr, bytes);
     return arena_allocator_alloc_func(
         (arena_allocator_t*) this,
@@ -102,12 +121,13 @@ static void arena_allocator_free_impl(void *this, void *ptr, const char *file, i
     free(ptr);
 }
 
-static const allocator_vtbl_t stdlib_vtbl = {
+static const allocator_vtbl_t arena_allocator_vtbl = {
     .alloc = arena_allocator_alloc_impl,
     .resize = arena_allocator_resize_impl,
     .free = arena_allocator_free_impl,
 };
 
 allocator_t arena_allocator_interface(arena_allocator_t *this) {
+    assert(false && "TODO: implement this");
 }
 
