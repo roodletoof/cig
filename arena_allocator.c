@@ -26,7 +26,7 @@ void *arena_allocator_alloc_func(
     return NULL;
 }
 
-void arena_allocator_reset(arena_allocator_t *this, const char *file, int line) {
+void arena_allocator_reset_func(arena_allocator_t *this, const char *file, int line) {
     borrow_allocator_free_all(&this->borrow_allocator);
     if (this->bytes == NULL) {
         this->bytes = dyn_array_create_non_crashing_func(
@@ -72,6 +72,7 @@ void arena_allocator_reset(arena_allocator_t *this, const char *file, int line) 
 void arena_allocator_destroy(arena_allocator_t *this) {
     borrow_allocator_free_all(&this->borrow_allocator);
     dyn_array_destroy(this->bytes);
+    *this = arena_allocator_create();
 }
 
 static void *arena_allocator_alloc_impl(void *this, size_t bytes, const char *file, int line) {

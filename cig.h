@@ -101,7 +101,7 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
            borrow_allocator_interface(&borrow_allocator_create());             \
        !((borrow_allocator_t *)NAME.this)->head;                               \
        ((borrow_allocator_t *)NAME.this)->head =                               \
-           (borrow_allocator_free_all(((borrow_allocator_t *)NAME.this)),         \
+           (borrow_allocator_free_all(((borrow_allocator_t *)NAME.this)),      \
             (linked_allocation_node_t *)1))                                    \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
@@ -145,9 +145,18 @@ void *arena_allocator_alloc_func(
 #define arena_allocator_alloc(THIS, BYTES)                                     \
   arena_allocator_alloc_func(THIS, BYTES, __FILE__, __LINE__)
 
-void arena_allocator_reset(arena_allocator_t *this, const char *file, int line);
+void arena_allocator_reset_func(arena_allocator_t *this, const char *file, int line);
+#define arena_allocator_reset(THIS)                                            \
+  arena_allocator_reset_func(THIS, __FILE__, __LINE__)
 void arena_allocator_destroy(arena_allocator_t *this);
 allocator_t arena_allocator_interface(arena_allocator_t *this);
+
+#define with_arena(ARENA, ALLOCATOR_NAME)                                      \
+  for (allocator_t ALLOCATOR_NAME = arena_allocator_interface(ARENA);          \
+       ALLOCATOR_NAME.vtbl != NULL;                                            \
+       ALLOCATOR_NAME.vtbl =                                                   \
+           (arena_allocator_reset_func(ARENA, __FILE__, __LINE__), NULL))      \
+    for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
 // dynamic arrays //////////////////////////////////////////////////////////////
 
