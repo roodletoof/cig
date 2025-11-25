@@ -4,10 +4,8 @@
 Test(arena_allocator, repeated_allocations) {
     arena_allocator_t aalloc = arena_allocator_create();
 
-    for ( int i = 0; i < 10; i++ ) {
-        with_arena(&aalloc, allocator) {
-            allocator_alloc(allocator, 10);
-        }
+    for ( int i = 0; i < 10; i++ ) with_arena(&aalloc, allocator) {
+        allocator_alloc(allocator, 10);
     }
 
     cr_assert_eq(aalloc.total_allocated, 10);
