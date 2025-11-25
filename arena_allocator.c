@@ -82,31 +82,36 @@ static void *arena_allocator_alloc_impl(void *this, size_t bytes, const char *fi
         line
     );
 }
+// TODO move to concrete implementation
 static void *arena_allocator_resize_impl(void *this, void *old_ptr, size_t bytes, const char *file, int line) {
     (void)this;
     (void)file;
     (void)line;
-    assert(false && "TODO: This is fucky. I need to see whether the allocation "
-                    "is in the buffer, if not then it is one of the borrow "
-                    "allocator nodes. I need an actual implementation here.");
     arena_allocator_t *t = (arena_allocator_t*) this;
 
     if (
         (size_t)t->bytes <= (size_t)old_ptr &&
         (size_t)old_ptr < (size_t)t->bytes + dyn_array_length(t->bytes)
     ) {
-      assert(false &&
-             "TODO: make new arena allocator implementation and copy from the "
-             "start of the old pointer until either the new size or until the "
-             "end of the bytes buffer. whichever is shorter.");
+        uint8_t *old_buffer = old_ptr;
+        uint8_t *new_buffer = arena_allocator_alloc_func(this, bytes, file, line);
+        if (new_buffer == NULL) return NULL;
+        // TODO: is this off by 1?
+        size_t old_ptr_dist = (size_t)t->bytes + dyn_array_length(t->bytes) - (size_t)old_ptr;
+        size_t bytes_to_copy = bytes < old_ptr_dist ? bytes : old_ptr_dist;
+        for ( size_t i = 0; i < bytes_to_copy; i++ ) {
+            new_buffer[i] = old_buffer[i];
+        }
+        return new_buffer;
     } else {
-        borrow_allocator_resize_func(&t->borrow_allocator, old_ptr, bytes, file, line);
+        void *new_buffer = borrow_allocator_resize_func(&t->borrow_allocator, old_ptr, bytes, file, line);
+        if (new_buffer == NULL) return NULL;
         // The bytes added to total_allocated is just an educated guess. If
         // calling realloc, you are often allocating twice what you got from the
         // last malloc/realloc call.
         t->total_allocated += bytes/2;
+        return new_buffer;
     }
-    return realloc(old_ptr, bytes);
     return arena_allocator_alloc_func(
         (arena_allocator_t*) this,
         bytes,
@@ -118,7 +123,7 @@ static void arena_allocator_free_impl(void *this, void *ptr, const char *file, i
     (void)this;
     (void)file;
     (void)line;
-    free(ptr);
+    (void)ptr;
 }
 
 static const allocator_vtbl_t arena_allocator_vtbl = {
@@ -128,6 +133,9 @@ static const allocator_vtbl_t arena_allocator_vtbl = {
 };
 
 allocator_t arena_allocator_interface(arena_allocator_t *this) {
-    assert(false && "TODO: implement this");
+    return (allocator_t) {
+        .this = this,
+        .vtbl = &arena_allocator_vtbl,
+    };
 }
 
