@@ -119,17 +119,12 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 // memory chunk that is needed for a single frame.
 typedef struct arena_allocator {
   borrow_allocator_t borrow_allocator;
-  // Total size of bytes allocated. This allocator will only grow the
-  // allocated field as allocations are made, keeping track of the total
-  // memory allocated, and if the allocations have to be done in several
-  // chunks because your initial guess of how much memory was needed doesn't
-  // meet reality, all chunks will be freed, and then for the next
-  // initialization this total amount will be allocated as a single chunk.
-  // This freeing of memory happens on reset, the next alloc allocates the
-  // whole chunk.
+  // Set to 0 when instantiating. Will be updated as the borrow allocator is
+  // used. Is used on reset to allocate a continous chunk of memory.
   size_t total_allocated;
   uint8_t *bytes;
 } arena_allocator_t;
+
 #define arena_allocator_create()                                               \
   (arena_allocator_t) {                                                        \
     .borrow_allocator = borrow_allocator_create(), .total_allocated = 0,       \
@@ -151,6 +146,10 @@ void arena_allocator_reset_func(arena_allocator_t *this, const char *file, int l
 void arena_allocator_destroy(arena_allocator_t *this);
 allocator_t arena_allocator_interface(arena_allocator_t *this);
 
+// TODO: make the reset happen at the start, not the end. That allows the user
+// to specify some starting size of the buffer.
+
+// You cannot use return within this block.
 #define with_arena(ARENA, ALLOCATOR_NAME)                                      \
   for (allocator_t ALLOCATOR_NAME = arena_allocator_interface(ARENA);          \
        ALLOCATOR_NAME.vtbl != NULL;                                            \
