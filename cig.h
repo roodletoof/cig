@@ -118,16 +118,17 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 // It is intended to eventually stabilize and find the required size of the
 // memory chunk that is needed for a single frame.
 typedef struct arena_allocator {
-  borrow_allocator_t borrow_allocator;
-  // Set to 0 when instantiating. Will be updated as the borrow allocator is
-  // used. Is used on reset to allocate a continous chunk of memory.
-  size_t total_allocated;
-  uint8_t *bytes;
+    borrow_allocator_t borrow_allocator;
+    // Set to 0 when instantiating. Will be updated as the borrow allocator is
+    // used. Is used on reset to allocate a continous chunk of memory.
+    size_t to_allocate;
+    size_t i;
+    uint8_t *bytes;
 } arena_allocator_t;
 
 #define arena_allocator_create()                                               \
   (arena_allocator_t) {                                                        \
-    .borrow_allocator = borrow_allocator_create(), .total_allocated = 0,       \
+    .borrow_allocator = borrow_allocator_create(), .to_allocate = 0, .i = 0,   \
     .bytes = NULL                                                              \
   }
 
@@ -143,6 +144,15 @@ void *arena_allocator_alloc_func(
 void arena_allocator_reset_func(arena_allocator_t *this, const char *file, int line);
 #define arena_allocator_reset(THIS)                                            \
   arena_allocator_reset_func(THIS, __FILE__, __LINE__)
+void *arena_allocator_resize_func(
+    arena_allocator_t *this,
+    void *old_ptr,
+    size_t bytes,
+    const char *file,
+    int line
+);
+#define arena_allocator_resize(THIS, OLD_PTR, BYTES) \
+    arena_allocator_resize_func(THIS, OLD_PTR, BYTES, __FILE__, __LINE__)
 void arena_allocator_destroy(arena_allocator_t *this);
 allocator_t arena_allocator_interface(arena_allocator_t *this);
 

@@ -20,7 +20,7 @@ void *arena_allocator_alloc_func(
     }
     allocated = borrow_allocator_alloc_func(&this->borrow_allocator, bytes, file, line);
     if (allocated != NULL) {
-        this->total_allocated += bytes;
+        this->to_allocate += bytes;
         return allocated;
     }
     return NULL;
@@ -33,7 +33,7 @@ void arena_allocator_reset_func(arena_allocator_t *this, const char *file, int l
             (dyn_array_create_non_crashing_func_args_t) {
                 .allocator=allocator_stdlib(),
                 .itemsize=sizeof(uint8_t),
-                .initial_capacity=this->total_allocated,
+                .initial_capacity=this->to_allocate,
                 .file=file,
                 .line=line,
             }
@@ -42,8 +42,8 @@ void arena_allocator_reset_func(arena_allocator_t *this, const char *file, int l
     if (this->bytes == NULL) {
         return;
     }
-    if (dyn_array_capacity(this->bytes) < this->total_allocated) {
-        size_t needed_bytes = this->total_allocated - dyn_array_length(this->bytes);
+    if (dyn_array_capacity(this->bytes) < this->to_allocate) {
+        size_t needed_bytes = this->to_allocate - dyn_array_length(this->bytes);
         uint8_t *new_bytes = dyn_array_grow_non_crashing_func(
             this->bytes,
             needed_bytes,
@@ -107,10 +107,10 @@ static void *arena_allocator_resize_impl(void *this, void *old_ptr, size_t bytes
     } else {
         void *new_buffer = borrow_allocator_resize_func(&t->borrow_allocator, old_ptr, bytes, file, line);
         if (new_buffer == NULL) return NULL;
-        // The bytes added to total_allocated is just an educated guess. If
+        // The bytes added to to_allocate is just an educated guess. If
         // calling realloc, you are often allocating twice what you got from the
         // last malloc/realloc call.
-        t->total_allocated += bytes/2;
+        t->to_allocate += bytes/2;
         return new_buffer;
     }
     return arena_allocator_alloc_func(

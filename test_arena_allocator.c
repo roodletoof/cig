@@ -9,12 +9,12 @@ Test(arena_allocator, repeated_allocations) {
         allocator_alloc(allocator, 10);
     }
 
-    cr_assert_eq(aalloc.total_allocated, 10);
+    cr_assert_eq(aalloc.to_allocate, 10);
     cr_assert_eq(borrow_allocator_count_allocations(&aalloc.borrow_allocator), 0);
     cr_assert_eq(dyn_array_capacity(aalloc.bytes), 10);
 
     arena_allocator_destroy(&aalloc);
-    cr_assert_eq(aalloc.total_allocated, 0);
+    cr_assert_eq(aalloc.to_allocate, 0);
 }
 
 Test(arena_allocator, alignment) {
@@ -34,8 +34,8 @@ Test(arena_allocator, alignment) {
 		}
 	}
 	arena_allocator_reset(&aalloc);
-	fprintf(stderr, "%zu\n", aalloc.total_allocated);
-    cr_assert_eq(aalloc.total_allocated, MAX_ALIGN *  1000 + 1);
+	fprintf(stderr, "%zu\n", aalloc.to_allocate);
+    cr_assert_eq(aalloc.to_allocate, MAX_ALIGN *  1000 + 1);
 }
 
 // TODO somehow test reallocations

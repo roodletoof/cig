@@ -11,12 +11,12 @@ int main() {
         allocator_alloc(allocator, 10);
     }
 
-    assert(aalloc.total_allocated == 10);
+    assert(aalloc.to_allocate == 10);
     assert(borrow_allocator_count_allocations(&aalloc.borrow_allocator) == 0);
     assert(dyn_array_capacity(aalloc.bytes) == 10);
 
     arena_allocator_destroy(&aalloc);
-    assert(aalloc.total_allocated == 0);
+    assert(aalloc.to_allocate == 0);
 	arena_allocator_destroy(&aalloc);
 
 	// test 2 //////////////////////////////////////////////////////////////////////
@@ -36,8 +36,8 @@ int main() {
 		}
 	}
 	arena_allocator_reset(&aalloc);
-	fprintf(stderr, "%zu\n", aalloc.total_allocated);
-    //assert(aalloc.total_allocated == MAX_ALIGN *  1000 + 1);
+	fprintf(stderr, "%zu\n", aalloc.to_allocate);
+    //assert(aalloc.to_allocate == MAX_ALIGN *  1000 + 1);
 	// TODO: WHAT is happening here?
 	arena_allocator_destroy(&aalloc);
 }
