@@ -3,17 +3,46 @@
 
 #include <stdbool.h>
 
+#define UNIQUE __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef7__
+#define UNIQUE2 __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef8__
+
 typedef struct args {
     int count;
-    char **values;
+    const char **values;
 } args_t;
 
-args_t make_args(int arg_count, char **args);
-bool command(args_t *args, char *command_name);
-bool parse_bool(args_t args, char *flag_name);
-char *parse_string(args_t args, char *flag_name);
-int parse_int(args_t args, char *flag_name);
+args_t cli_make_args(int argc, const char **argv); // no crash
+bool cli_command(args_t *args, const char *command_name); // no crash
+bool cli_bool(args_t args, const char *flag_name); // no crash
+bool cli_opt_str_func(args_t args, const char *flag_name, const char **output, const char *file, int line);
+const char *cli_req_str_func(args_t args, const char *flag_name, const char *file, int line);
+bool cli_opt_int_func(args_t args, const char *flag_name, int *output, const char *file, int line);
+int cli_req_int_func(args_t args, const char *flag_name, const char *file, int line);
 
+#define cli_opt_str(ARGS, FLAG_NAME, OUTPUT) cli_opt_str_func(ARGS, FLAG_NAME, OUTPUT, __FILE__, __LINE__)
+#define cli_req_str(ARGS, FLAG_NAME) cli_req_str_func(ARGS, FLAG_NAME, __FILE__, __LINE__)
+#define cli_opt_int(ARGS, FLAG_NAME, OUTPUT) cli_opt_int_func(ARGS, FLAG_NAME, OUTPUT, __FILE__, __LINE__)
+#define cli_req_int(ARGS, FLAG_NAME) cli_req_int_func(ARGS, FLAG_NAME, __FILE__, __LINE__)
+
+#define with_opt_str(ARGS, FLAG_NAME, VAR) \
+    for (const char *VAR = NULL; VAR == NULL;) \
+    for (bool UNIQUE = true; UNIQUE;) \
+    for ( \
+        bool UNIQUE2 = (UNIQUE = cli_opt_str(ARGS, FLAG_NAME, &VAR), true); \
+        UNIQUE2; \
+        UNIQUE2 = (VAR = ((const char *) 1), UNIQUE = false, false) \
+    ) \
+    if (UNIQUE)
+
+#define with_opt_int(ARGS, FLAG_NAME, VAR) \
+    for (int VAR = 0; VAR == 0;) \
+    for (bool UNIQUE = true; UNIQUE;) \
+    for ( \
+        bool UNIQUE2 = (UNIQUE = cli_opt_int(ARGS, FLAG_NAME, &VAR), true); \
+        UNIQUE2; \
+        UNIQUE2 = (VAR = 1, UNIQUE = false, false) \
+    ) \
+    if (UNIQUE)
 
 #ifdef CLI_IMPL
 
@@ -21,8 +50,7 @@ int parse_int(args_t args, char *flag_name);
 #include <stdlib.h>
 #include <string.h>
 
-
-bool command(args_t *args, char *command_name) {
+bool cli_command(args_t *args, const char *command_name) {
     if (args->count == 0) {
         return false;
     }
@@ -34,7 +62,7 @@ bool command(args_t *args, char *command_name) {
     return false;
 }
 
-bool parse_bool(args_t args, char *flag_name) {
+bool cli_bool(args_t args, const char *flag_name) {
     for ( int i = 0; i < args.count; i++ ) {
         if (strcmp(args.values[i], flag_name) == 0) {
             return true;
@@ -43,44 +71,87 @@ bool parse_bool(args_t args, char *flag_name) {
     return false;
 }
 
-char *parse_string(args_t args, char *flag_name) {
-    bool is_found = false;
+bool cli_opt_str_func(args_t args, const char *flag_name, const char **output, const char *file, int line) {
+    bool is_flag_name_found = false;
     int flag_name_index;
     for ( int i = 0; i < args.count; i++ ) {
         if (strcmp(args.values[i], flag_name) == 0) {
-            is_found = true;
+            is_flag_name_found = true;
             flag_name_index = i;
             break;
         }
     }
-    if (!is_found) {
-        fprintf(stderr, "Arg %s not found!\n", flag_name);
-        exit(1);
+    static const char *dummy = "";
+    if (!is_flag_name_found) {
+        *output = dummy;
+        return false;
     }
     int flag_value_index = flag_name_index + 1;
-    if (flag_value_index >= args.count) {
-        fprintf(stderr, "No value provided for %s!\n", flag_name);
+    if (args.count <= flag_value_index) {
+        fprintf(stderr, "%s:%d: No value provided for %s!\n", file, line, flag_name);
         exit(1);
     }
-    return args.values[flag_value_index];
+    *output = args.values[flag_value_index];
+    return true;
 }
 
-int parse_int(args_t args, char *flag_name) {
-    char *text = parse_string(args, flag_name);
-    for ( char *c = text; (*c) != '\0'; c++ ) {
-        if ((*c) < '0' || '9' < (*c)) {
-            fprintf(stderr, "Invalid integer %s!\n", text);
+const char *cli_req_str_func(args_t args, const char *flag_name, const char *file, int line) {
+    const char *value;
+    if (cli_opt_str_func(args, flag_name, &value, file, line)) {
+        return value;
+    } else {
+        fprintf(stderr, "%s:%d: Required string %s not provided!\n", file, line, flag_name);
+        exit(1);
+    }
+    return "";
+}
+
+bool cli_opt_int_func(args_t args, const char *flag_name, int *output, const char *file, int line) {
+    const char *text = "";
+    if (cli_opt_str_func(args, flag_name, &text, file, line)) {
+        if (
+            text[0] != '-' &&
+            text[0] < '0' &&
+            '9' < text[0]
+        ) {
+            fprintf(stderr, "%s:%d: Invalid integer %s!\n", file, line, text);
             exit(1);
         }
+        if (
+            text[0] == '-' &&
+            text[1] == '\0'
+        ) {
+            fprintf(stderr, "%s:%d: Invalid integer %s!\n", file, line, text);
+            exit(1);
+        }
+        for ( const char *c = &text[1]; (*c) != '\0'; c++ ) {
+            if ((*c) < '0' || '9' < (*c)) {
+                fprintf(stderr, "%s:%d: Invalid integer %s!\n", file, line, text);
+                exit(1);
+            }
+        }
+        *output = atoi(text);
+        return true;
     }
-    int result = atoi(text);
-    return result;
+    *output = 0;
+    return false;
 }
 
-args_t make_args(int arg_count, char **args) {
+int cli_req_int_func(args_t args, const char *flag_name, const char *file, int line) {
+    int value;
+    if (cli_opt_int_func(args, flag_name, &value, file, line)) {
+        return value;
+    } else {
+        fprintf(stderr, "%s:%d: Required int %s not provided!\n", file, line, flag_name);
+        exit(1);
+    }
+    return 0;
+}
+
+args_t cli_make_args(int argc, const char **argv) {
     return (args_t) {
-        .count = arg_count-1,
-        .values = args+1,
+        .count = argc-1,
+        .values = argv+1,
     };
 }
 
