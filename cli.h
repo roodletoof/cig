@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 
-#define UNIQUE __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef7__
-#define UNIQUE2 __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef8__
+#define CLI_UNIQUE1 __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef7__
+#define CLI_UNIQUE2 __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef8__
 
 typedef struct args {
     int count;
@@ -26,23 +26,23 @@ int cli_req_int_func(args_t args, const char *flag_name, const char *file, int l
 
 #define with_opt_str(ARGS, FLAG_NAME, VAR) \
     for (const char *VAR = NULL; VAR == NULL;) \
-    for (bool UNIQUE = true; UNIQUE;) \
+    for (bool CLI_UNIQUE1 = true; CLI_UNIQUE1;) \
     for ( \
-        bool UNIQUE2 = (UNIQUE = cli_opt_str(ARGS, FLAG_NAME, &VAR), true); \
-        UNIQUE2; \
-        UNIQUE2 = (VAR = ((const char *) 1), UNIQUE = false, false) \
+        bool CLI_UNIQUE2 = (CLI_UNIQUE1 = cli_opt_str(ARGS, FLAG_NAME, &VAR), true); \
+        CLI_UNIQUE2; \
+        CLI_UNIQUE2 = (VAR = ((const char *) 1), CLI_UNIQUE1 = false, false) \
     ) \
-    if (UNIQUE)
+    if (CLI_UNIQUE1)
 
 #define with_opt_int(ARGS, FLAG_NAME, VAR) \
     for (int VAR = 0; VAR == 0;) \
-    for (bool UNIQUE = true; UNIQUE;) \
+    for (bool CLI_UNIQUE1 = true; CLI_UNIQUE1;) \
     for ( \
-        bool UNIQUE2 = (UNIQUE = cli_opt_int(ARGS, FLAG_NAME, &VAR), true); \
-        UNIQUE2; \
-        UNIQUE2 = (VAR = 1, UNIQUE = false, false) \
+        bool CLI_UNIQUE2 = (CLI_UNIQUE1 = cli_opt_int(ARGS, FLAG_NAME, &VAR), true); \
+        CLI_UNIQUE2; \
+        CLI_UNIQUE2 = (VAR = 1, CLI_UNIQUE1 = false, false) \
     ) \
-    if (UNIQUE)
+    if (CLI_UNIQUE1)
 
 #ifdef CLI_IMPL
 
