@@ -105,7 +105,7 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
             (linked_allocation_node_t *)1))                                    \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
-// arena allocators ////////////////////////////////////////////////////////////
+// arena allocators // BUGGY! //////////////////////////////////////////////////
 
 // The idea of this allocator is to allocate all required memory in a single
 // chunk. But it does not require you to know how much memory you need
