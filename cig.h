@@ -1,5 +1,5 @@
-#ifndef ALLOCATOR_H
-#define ALLOCATOR_H
+#ifndef CIG_H
+#define CIG_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -242,7 +242,7 @@ void dyn_array_destroy(void *this);
 
 #define dyn_array_pop(THIS) (dyn_array_shrink(THIS, 1), THIS[dyn_array_length(THIS)])
 
-#ifdef ALLOCATOR_IMPLEMENTATION
+#ifdef CIG_IMPL
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
     return this.vtbl->alloc(this.this, bytes, file, line);
@@ -260,5 +260,5 @@ void allocator_free_func(allocator_t this, void *ptr, const char *file, int line
 #include "dyn_array.c"
 #include "arena_allocator.c"
 
-#endif // ALLOCATOR_IMPLEMENTATION
-#endif // ALLOCATOR_H
+#endif // CIG_IMPL
+#endif // CIG_H

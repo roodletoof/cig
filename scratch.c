@@ -1,4 +1,4 @@
-#define ALLOCATOR_IMPLEMENTATION
+#define CIG_IMPL
 #include "cig.h"
 #include <stdio.h>
 #include <assert.h>
