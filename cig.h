@@ -142,7 +142,7 @@ void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args
                                                   .file = __FILE__,            \
                                                   .line = __LINE__,            \
                                                   __VA_ARGS__}))
-
+// TODO: remove the non-crashing versions. they crash...
 // This version returns a NULL pointer instead of crashing if the allocator return NULL.
 // It is up to you to check that the pointer returned isn't NULL
 // Always reassign the array. if multiple variables reference the same growing
