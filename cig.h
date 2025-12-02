@@ -182,6 +182,7 @@ void allocator_reset(allocator_t this) {
     this.vtbl->reset(this.this);
 }
 
+// TODO: rename std_allocator.c to forever_allocator.c
 #include "std_allocator.c"
 #include "buffer_allocator.c"
 #include "borrow_allocator.c"
