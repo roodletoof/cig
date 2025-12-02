@@ -11,29 +11,11 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args) {
             .line=args.line
         }
     );
-    if (bytes == NULL) {
-        fprintf(
-            stderr,
-            "%s:%d: allocator returned NULL\n",
-            args.file,
-            args.line
-        );
-        exit(1);
-    }
     return bytes;
 }
 
 void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line) {
     void *bytes = dyn_array_grow_non_crashing_func(this, n_new_items, file, line);
-    if (bytes == NULL) {
-        fprintf(
-            stderr,
-            "%s:%d: allocator returned NULL\n",
-            file,
-            line
-        );
-        exit(1);
-    }
     return bytes;
 }
 
@@ -44,7 +26,6 @@ void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args
         args.file,
         args.line
     );
-    if (header == NULL) { return NULL; }
     header->size = 0;
     header->capacity = args.initial_capacity;
     header->itemsize = args.itemsize;
@@ -69,7 +50,6 @@ void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items, const cha
             file,
             line
         );
-        if (header == NULL) { return NULL; }
         header->capacity = new_capacity;
     }
     header->size = new_size;
@@ -101,10 +81,4 @@ size_t dyn_array_capacity(void *this) {
     if (this == NULL) { return 0; }
     dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
     return header->capacity;
-}
-
-void dyn_array_destroy(void *this) {
-    if (this == NULL) { return; }
-    dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-    allocator_free(header->allocator, header);
 }

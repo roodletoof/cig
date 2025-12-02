@@ -3,14 +3,11 @@
 
 #define EXPECT 5
 Test(borrow_allocator, test) {
-    borrow_allocator_t balloc = borrow_allocator_create();
-    int *ptr = borrow_allocator_alloc(&balloc, sizeof(int));
+    allocator_t balloc = borrow_allocator(&borrow_allocator_create());
+    int *ptr = allocator_alloc(balloc, sizeof(int));
     *ptr = EXPECT;
     cr_assert_eq(*ptr, EXPECT);
-    cr_assert_eq(1, borrow_allocator_count_allocations(&balloc));
-    borrow_allocator_free_all(&balloc);
-    cr_assert_eq(0, borrow_allocator_count_allocations(&balloc));
-    borrow_allocator_assert_all_freed(&balloc);
+    allocator_reset(balloc);
 }
 
 #define IS_SIZE 900

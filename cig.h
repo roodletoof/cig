@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; } any_align_t;
@@ -17,9 +18,9 @@ typedef union any_align { char c; int i; long l; long long ll; float f; double d
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.
 typedef struct allocator_vtbl {
-    void *(*alloc)(void *this, size_t bytes, const char *file, int line);
-    void *(*resize)(void *this, void *old_ptr, size_t bytes, const char *file, int line);
-    void (*free)(void *this, void *ptr, const char *file, int line);
+    void *(*alloc)(void *this, size_t bytes);
+    void *(*resize)(void *this, void *old_ptr, size_t bytes);
+    void (*reset)(void *this);
 } allocator_vtbl_t;
 
 // An instance of an allocator.
@@ -32,13 +33,12 @@ typedef struct allocator {
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line);
 void *allocator_resize_func(allocator_t this, void *old_ptr, size_t bytes, const char *file, int line);
-void allocator_free_func(allocator_t this, void *ptr, const char *file, int line);
+void allocator_reset(allocator_t this);
 #define allocator_alloc(this, bytes) allocator_alloc_func(this, bytes, __FILE__, __LINE__)
 #define allocator_resize(this, old_ptr, bytes) allocator_resize_func(this, old_ptr, bytes, __FILE__, __LINE__)
-#define allocator_free(this, ptr) allocator_free_func(this, ptr, __FILE__, __LINE__)
 
 // std_allocator ///////////////////////////////////////////////////////////////
-allocator_t allocator_stdlib();
+allocator_t forever_allocator();
 // buffer_allocator ////////////////////////////////////////////////////////////
 typedef struct buffer_allocator {
     size_t size, capacity;
@@ -49,20 +49,12 @@ typedef struct buffer_allocator {
   ((buffer_allocator_t){ \
       .size = 0, .capacity = CAPACITY, .data = (uint8_t[CAPACITY]){0}})
 
-allocator_t buffer_allocator_interface(buffer_allocator_t *this);
-void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes);
-// Very simple resize. Does not free any memory, nor does it keep track of the
-// previously allocated size of the old_pointer, just copies over as few bytes
-// as it can with the information it has to a new allocation.
-void *buffer_allocator_resize(buffer_allocator_t *this, void *old_ptr, size_t bytes);
-void buffer_allocator_reset(buffer_allocator_t *this);
+allocator_t buffer_allocator(buffer_allocator_t *this);
 
 // borrow_allocator ////////////////////////////////////////////////////////////
 typedef struct linked_allocation_node {
     struct linked_allocation_node *next;
     struct linked_allocation_node *prev;
-    const char *file;
-    int line;
     any_align_t data[];
 } linked_allocation_node_t;
 
@@ -72,19 +64,7 @@ typedef struct borrow_allocator {
 
 #define borrow_allocator_create() ((borrow_allocator_t){.head=NULL})
 
-void *borrow_allocator_alloc_func(borrow_allocator_t *this, size_t bytes, const char *file, int line);
-#define borrow_allocator_alloc(this, bytes) borrow_allocator_alloc_func(this, bytes, __FILE__, __LINE__)
-void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_ptr, size_t bytes, const char *file, int line);
-#define borrow_allocator_resize(this, old_ptr, bytes) borrow_allocator_resize_func(this, old_ptr, bytes, __FILE__, __LINE__)
-void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr);
-// Free all allocations done by this allocator.
-void borrow_allocator_free_all(borrow_allocator_t *this);
-size_t borrow_allocator_count_allocations(borrow_allocator_t *this);
-// Check that all allocations have been freed, or print a list of files and
-// lines where made that haven't been freed to stderr and then exit the program
-// with 1 as the return value.
-void borrow_allocator_assert_all_freed(borrow_allocator_t *this);
-allocator_t borrow_allocator_interface(borrow_allocator_t *this);
+allocator_t borrow_allocator(borrow_allocator_t *this);
 
 // Some text that can be used as an identifier (no, not by you), so that I can
 // use a variable that won't collide with yours inside macros.
@@ -96,75 +76,14 @@ allocator_t borrow_allocator_interface(borrow_allocator_t *this);
 // with_borrow(foos_allocator) {bar = foo(foos_allocator, my_allocator); } Using
 // the return a keyword in the statement following this macro will cause a
 // guaranteed memory leak.
+// TODO: simplify!
 #define with_borrow(NAME)                                                      \
   for (allocator_t NAME =                                                      \
-           borrow_allocator_interface(&borrow_allocator_create());             \
+           borrow_allocator(&borrow_allocator_create());             \
        !((borrow_allocator_t *)NAME.this)->head;                               \
        ((borrow_allocator_t *)NAME.this)->head =                               \
-           (borrow_allocator_free_all(((borrow_allocator_t *)NAME.this)),      \
+           (allocator_reset(NAME),      \
             (linked_allocation_node_t *)1))                                    \
-    for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
-
-// arena allocators // BUGGY! //////////////////////////////////////////////////
-
-// The idea of this allocator is to allocate all required memory in a single
-// chunk. But it does not require you to know how much memory you need
-// beforehand. Instead the number of bytes allocated will be recorded and
-// updated, so that the whole thing can be reallocated as a single chunk that is
-// as large as it needs to be.
-//
-// This basically exists for allocations that live for a single 'tick' of an
-// application.
-// It is intended to eventually stabilize and find the required size of the
-// memory chunk that is needed for a single frame.
-typedef struct arena_allocator {
-    borrow_allocator_t borrow_allocator;
-    // Set to 0 when instantiating. Will be updated as the borrow allocator is
-    // used. Is used on reset to allocate a continous chunk of memory.
-    size_t to_allocate;
-    size_t i;
-    uint8_t *bytes;
-} arena_allocator_t;
-
-#define arena_allocator_create()                                               \
-  (arena_allocator_t) {                                                        \
-    .borrow_allocator = borrow_allocator_create(), .to_allocate = 0, .i = 0,   \
-    .bytes = NULL                                                              \
-  }
-
-void *arena_allocator_alloc_func(
-    arena_allocator_t *this,
-    size_t bytes,
-    const char *file,
-    int line
-);
-#define arena_allocator_alloc(THIS, BYTES)                                     \
-  arena_allocator_alloc_func(THIS, BYTES, __FILE__, __LINE__)
-
-void arena_allocator_reset_func(arena_allocator_t *this, const char *file, int line);
-#define arena_allocator_reset(THIS)                                            \
-  arena_allocator_reset_func(THIS, __FILE__, __LINE__)
-void *arena_allocator_resize_func(
-    arena_allocator_t *this,
-    void *old_ptr,
-    size_t bytes,
-    const char *file,
-    int line
-);
-#define arena_allocator_resize(THIS, OLD_PTR, BYTES) \
-    arena_allocator_resize_func(THIS, OLD_PTR, BYTES, __FILE__, __LINE__)
-void arena_allocator_destroy(arena_allocator_t *this);
-allocator_t arena_allocator_interface(arena_allocator_t *this);
-
-// TODO: make the reset happen at the start, not the end. That allows the user
-// to specify some starting size of the buffer.
-
-// You cannot use return within this block.
-#define with_arena(ARENA, ALLOCATOR_NAME)                                      \
-  for (allocator_t ALLOCATOR_NAME = arena_allocator_interface(ARENA);          \
-       ALLOCATOR_NAME.vtbl != NULL;                                            \
-       ALLOCATOR_NAME.vtbl =                                                   \
-           (arena_allocator_reset_func(ARENA, __FILE__, __LINE__), NULL))      \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
 // dynamic arrays //////////////////////////////////////////////////////////////
@@ -233,7 +152,6 @@ void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items, const cha
 
 size_t dyn_array_length(void *this);
 size_t dyn_array_capacity(void *this);
-void dyn_array_destroy(void *this);
 
 #define dyn_array_append(THIS, VAL) do { \
     THIS = dyn_array_grow(THIS, 1); \
@@ -245,20 +163,29 @@ void dyn_array_destroy(void *this);
 #ifdef CIG_IMPL
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
-    return this.vtbl->alloc(this.this, bytes, file, line);
+    void *ptr = this.vtbl->alloc(this.this, bytes);
+    if (ptr == NULL) {
+        fprintf(stderr, "%s:%d: alloc returned NULL\n", file, line);
+        exit(1);
+    }
+    return ptr;
 }
 void *allocator_resize_func(allocator_t this, void *old_ptr, size_t bytes, const char *file, int line) {
-    return this.vtbl->resize(this.this, old_ptr, bytes, file, line);
+    void *ptr = this.vtbl->resize(this.this, old_ptr, bytes);
+    if (ptr == NULL) {
+        fprintf(stderr, "%s:%d: alloc returned NULL\n", file, line);
+        exit(1);
+    }
+    return ptr;
 }
-void allocator_free_func(allocator_t this, void *ptr, const char *file, int line) {
-    this.vtbl->free(this.this, ptr, file, line);
+void allocator_reset(allocator_t this) {
+    this.vtbl->reset(this.this);
 }
 
 #include "std_allocator.c"
 #include "buffer_allocator.c"
 #include "borrow_allocator.c"
 #include "dyn_array.c"
-#include "arena_allocator.c"
 
 #endif // CIG_IMPL
 #endif // CIG_H
