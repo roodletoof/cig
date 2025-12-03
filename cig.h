@@ -6,14 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; } any_align_t;
+typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; long double ld; } any_align_t;
 #define MAX_ALIGN ((size_t) sizeof(any_align_t))
 #define KB (1024)
 #define MB (KB * KB)
 #define GB (KB * KB * KB)
 #define OFFSET(STRUCT, FIELD) ((size_t) (&((STRUCT*) NULL)->FIELD))
 #define PTR_FROM_FIELD_PTR(STRUCT, FIELD, PTR) ((STRUCT *) (((char *) PTR) - OFFSET(STRUCT, FIELD)))
-
 
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.
@@ -89,15 +88,7 @@ typedef struct arena_allocator {
 	allocator_t allocator;
 	size_t size;
 	size_t capacity;
-	// this may grow outside the allocated data. When data is not large enough,
-	// the backing allocator will be used to allocate exactly what the user
-	// asked for, and the total_allocated will grow for each such allocation.
-	// On the next reset if total_allocated is larger than capacity, we know
-	// that there are allocations outside the large buffer, so we reset the
-	// allocator, and allocate a new buffer that is the size of
-	// total_allocated, and set the new size of the capacity. Otherwise the
-	// size is just reset to 0. plus something else I think I forgot.
-	size_t total_allocated_bytes;
+	size_t bytes_outside_data;
 	uint8_t *data;
 } arena_allocator_t;
 
