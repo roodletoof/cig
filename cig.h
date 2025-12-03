@@ -62,9 +62,9 @@ typedef struct borrow_allocator {
     linked_allocation_node_t *head;
 } borrow_allocator_t;
 
-#define borrow_allocator_create() ((borrow_allocator_t){.head=NULL})
-
-allocator_t borrow_allocator(borrow_allocator_t *this);
+#define borrow_allocator_value() ((borrow_allocator_t){.head=NULL})
+allocator_t allocator_from_borrow(borrow_allocator_t *this);
+#define borrow_allocator_create() allocator_from_borrow(&borrow_allocator_value())
 
 // Some text that can be used as an identifier (no, not by you), so that I can
 // use a variable that won't collide with yours inside macros.
@@ -78,12 +78,8 @@ allocator_t borrow_allocator(borrow_allocator_t *this);
 // guaranteed memory leak.
 // TODO: simplify!
 #define with_borrow(NAME)                                                      \
-  for (allocator_t NAME =                                                      \
-           borrow_allocator(&borrow_allocator_create());             \
-       !((borrow_allocator_t *)NAME.this)->head;                               \
-       ((borrow_allocator_t *)NAME.this)->head =                               \
-           (allocator_reset(NAME),      \
-            (linked_allocation_node_t *)1))                                    \
+  for (allocator_t NAME = borrow_allocator_create(); NAME.this != NULL;        \
+       NAME.this = (allocator_reset(NAME), NULL))                              \
     for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
 
 // dynamic arrays //////////////////////////////////////////////////////////////
@@ -182,8 +178,7 @@ void allocator_reset(allocator_t this) {
     this.vtbl->reset(this.this);
 }
 
-// TODO: rename std_allocator.c to forever_allocator.c
-#include "std_allocator.c"
+#include "forever_allocator.c"
 #include "buffer_allocator.c"
 #include "borrow_allocator.c"
 #include "dyn_array.c"

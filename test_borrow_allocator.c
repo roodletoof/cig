@@ -3,7 +3,7 @@
 
 #define EXPECT 5
 Test(borrow_allocator, test) {
-    allocator_t balloc = borrow_allocator(&borrow_allocator_create());
+    allocator_t balloc = allocator_from_borrow(&borrow_allocator_value());
     int *ptr = allocator_alloc(balloc, sizeof(int));
     *ptr = EXPECT;
     cr_assert_eq(*ptr, EXPECT);

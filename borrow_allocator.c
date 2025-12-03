@@ -82,7 +82,7 @@ static const allocator_vtbl_t borrow_vtbl = {
     .reset = borrow_reset,
 };
 
-allocator_t borrow_allocator(borrow_allocator_t *this) {
+allocator_t allocator_from_borrow(borrow_allocator_t *this) {
     return (allocator_t) {
         .this=this,
         .vtbl=&borrow_vtbl,
