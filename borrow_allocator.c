@@ -30,6 +30,7 @@ void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_ptr, size
     return &new_node->data;
 }
 
+// TODO: remove
 void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr) {
     linked_allocation_node_t *node = PTR_FROM_FIELD_PTR(linked_allocation_node_t, data, old_ptr);
     if (node->prev != NULL) { node->prev->next = node->next; }
