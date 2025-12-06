@@ -203,6 +203,7 @@ typedef struct error_node {
 } error_node_t;
 
 typedef union scan_value {
+	int digit;
 	uint8_t u8;
 	int8_t i8;
 	uint16_t u16;
@@ -233,6 +234,7 @@ void scanner_error_and_recover(scanner_t *s, const char *message);
 bool scan_eof(scanner_t *s);
 bool scan_literal(scanner_t *s, const char *lit);
 bool scan_whitespace(scanner_t *s);
+bool scan_digit(scanner_t *s);
 bool scan_i64(scanner_t *s);
 bool scan_i32(scanner_t *s);
 bool scan_i16(scanner_t *s);

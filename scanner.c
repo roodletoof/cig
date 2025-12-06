@@ -82,6 +82,15 @@ bool scan_whitespace(scanner_t *s) {
 	return save != s->cur;
 }
 
+bool scan_digit(scanner_t *s) {
+	if (!isdigit((unsigned char)*s->cur)) {
+		return false;
+	}
+	s->value.digit = (*s->cur) - '0';
+	s->cur++;
+	return true;
+}
+
 bool scan_i64(scanner_t *s) {
 	const char *save = s->cur;
 	if (*s->cur == '-' || *s->cur == '+') s->cur++;
