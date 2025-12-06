@@ -87,7 +87,7 @@ void sb_add_substring(string_builder_t *this, const char *string, size_t substri
 	for ( size_t i = 0; i < min_length; i++ ) {
 		buffer[i] = string[i];
 	}
-	buffer[min_length-1] = '\0';
+	buffer[min_length] = '\0';
 	sb_add_string(this, buffer);
 }
 
