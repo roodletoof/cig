@@ -117,5 +117,8 @@ const char *sb_build(
 		}
 	}
 	buffer[total_length-1] = '\0';
+	// resets the builder after building.
+	this->head = NULL;
+	this->tail = NULL;
 	return buffer;
 }
