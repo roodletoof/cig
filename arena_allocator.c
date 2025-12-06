@@ -69,14 +69,29 @@ static void *arena_resize(arena_allocator_t *this, void *old_ptr, size_t bytes) 
 	return new_ptr_b;
 }
 
-// typedef struct arena_allocator {
-// 	allocator_t allocator;
-// 	size_t size;
-// 	size_t capacity;
-// 	size_t bytes_outside_data;
-// 	uint8_t *data;
-// } arena_allocator_t;
+static void *arena_alloc_impl(void *this, size_t bytes) {
+	return arena_alloc((arena_allocator_t*)this, bytes);
+}
 
+static void *arena_resize_impl(void *this, void *old_ptr, size_t bytes) {
+	return arena_resize((arena_allocator_t*)this, old_ptr, bytes);
+}
+
+static void arena_reset_impl(void *this) {
+	arena_reset((arena_allocator_t*)this);
+}
+
+static const allocator_vtbl_t arena_vtbl = {
+	.alloc = arena_alloc_impl,
+	.resize = arena_resize_impl,
+	.reset = arena_reset_impl,
+};
 
 allocator_t allocator_from_arena(arena_allocator_t *this) {
+	return (allocator_t) {
+		.this=this,
+		.vtbl=&arena_vtbl,
+	};
 }
+
+
