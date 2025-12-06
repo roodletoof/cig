@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; long double ld; } any_align_t;
 #define MAX_ALIGN ((size_t) sizeof(any_align_t))
@@ -177,6 +178,49 @@ size_t dyn_array_capacity(void *this);
 
 #define dyn_array_pop(THIS) (dyn_array_shrink(THIS, 1), THIS[dyn_array_length(THIS)])
 
+// CLI /////////////////////////////////////////////////////////////////////////
+
+#define CLI_UNIQUE1 __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef7__
+#define CLI_UNIQUE2 __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef8__
+
+typedef struct args {
+	int count;
+	const char **values;
+} args_t;
+
+args_t cli_make_args(int argc, const char **argv); // no crash
+bool cli_command(args_t *args, const char *command_name); // no crash
+bool cli_bool(args_t args, const char *flag_name); // no crash
+bool cli_opt_str_func(args_t args, const char *flag_name, const char **output, const char *file, int line);
+const char *cli_req_str_func(args_t args, const char *flag_name, const char *file, int line);
+bool cli_opt_int_func(args_t args, const char *flag_name, int *output, const char *file, int line);
+int cli_req_int_func(args_t args, const char *flag_name, const char *file, int line);
+
+#define cli_opt_str(ARGS, FLAG_NAME, OUTPUT) cli_opt_str_func(ARGS, FLAG_NAME, OUTPUT, __FILE__, __LINE__)
+#define cli_req_str(ARGS, FLAG_NAME) cli_req_str_func(ARGS, FLAG_NAME, __FILE__, __LINE__)
+#define cli_opt_int(ARGS, FLAG_NAME, OUTPUT) cli_opt_int_func(ARGS, FLAG_NAME, OUTPUT, __FILE__, __LINE__)
+#define cli_req_int(ARGS, FLAG_NAME) cli_req_int_func(ARGS, FLAG_NAME, __FILE__, __LINE__)
+
+#define with_opt_str(ARGS, FLAG_NAME, VAR) \
+	for (const char *VAR = NULL; VAR == NULL;) \
+	for (bool CLI_UNIQUE1 = true; CLI_UNIQUE1;) \
+	for ( \
+		bool CLI_UNIQUE2 = (CLI_UNIQUE1 = cli_opt_str(ARGS, FLAG_NAME, &VAR), true); \
+		CLI_UNIQUE2; \
+		CLI_UNIQUE2 = (VAR = ((const char *) 1), CLI_UNIQUE1 = false, false) \
+	) \
+	if (CLI_UNIQUE1)
+
+#define with_opt_int(ARGS, FLAG_NAME, VAR) \
+	for (int VAR = 0; VAR == 0;) \
+	for (bool CLI_UNIQUE1 = true; CLI_UNIQUE1;) \
+	for ( \
+		bool CLI_UNIQUE2 = (CLI_UNIQUE1 = cli_opt_int(ARGS, FLAG_NAME, &VAR), true); \
+		CLI_UNIQUE2; \
+		CLI_UNIQUE2 = (VAR = 1, CLI_UNIQUE1 = false, false) \
+	) \
+	if (CLI_UNIQUE1)
+
 #ifdef CIG_IMPL
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
@@ -204,6 +248,7 @@ void allocator_reset(allocator_t this) {
 #include "borrow_allocator.c"
 #include "arena_allocator.c"
 #include "dyn_array.c"
+#include "cli.c"
 
 #endif // CIG_IMPL
 #endif // CIG_H
