@@ -196,6 +196,60 @@ int cli_req_int_func(args_t args, const char *flag_name, const char *file, int l
 	) \
 	if (CLI_UNIQUE1)
 
+// scanner /////////////////////////////////////////////////////////////////////
+
+typedef struct error_node {
+	char *msg;
+	struct error_node *next;
+} error_node_t;
+
+typedef union scan_value {
+	uint8_t u8;
+	int8_t i8;
+	uint16_t u16;
+	int16_t i16;
+	uint32_t u32;
+	int32_t i32;
+	uint64_t u64;
+	int64_t i64;
+	float f32;
+	double f64;
+	char *identifier;
+	char *string_literal;
+} scan_value_t;
+
+typedef struct scanner {
+	const char *name; // name of the buffer
+	const char *start; // pointer to the full buffer
+	const char *cur; // current pointer
+	scan_value_t value;
+	error_node_t *errors; // singly linked list of error strings
+	allocator_t allocator;
+} scanner_t;
+
+scanner_t make_scanner(const char *name, const char *buffer, allocator_t allocator);
+void scanner_recover(scanner_t *s);
+void scanner_error(scanner_t *s, const char *message);
+void scanner_error_and_recover(scanner_t *s, const char *message);
+bool scan_eof(scanner_t *s);
+bool scan_literal(scanner_t *s, const char *lit);
+bool scan_whitespace(scanner_t *s);
+bool scan_i64(scanner_t *s);
+bool scan_i32(scanner_t *s);
+bool scan_i16(scanner_t *s);
+bool scan_i8(scanner_t *s);
+bool scan_u64(scanner_t *s);
+bool scan_u32(scanner_t *s);
+bool scan_u16(scanner_t *s);
+bool scan_u8(scanner_t *s);
+bool scan_f64(scanner_t *s);
+bool scan_f32(scanner_t *s);
+// Scan as much of an identifier as possible, you are responsible to scan for
+// valid characters after the identifier is scanned.
+bool scan_identifier(scanner_t *s);
+bool scan_string_literal(scanner_t *s);
+bool scanner_print_errors(scanner_t *s, FILE *fp);
+
 #ifdef CIG_IMPL
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
@@ -224,6 +278,7 @@ void allocator_reset(allocator_t this) {
 #include "arena_allocator.c"
 #include "dyn_array.c"
 #include "cli.c"
+#include "scanner.c"
 
 #endif // CIG_IMPL
 #endif // CIG_H
