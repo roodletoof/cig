@@ -30,19 +30,6 @@ static void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_pt
 	return &new_node->data;
 }
 
-// TODO: remove
-static void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr) {
-	linked_allocation_node_t *node = PTR_FROM_FIELD_PTR(linked_allocation_node_t, data, old_ptr);
-	if (node->prev != NULL) { node->prev->next = node->next; }
-	if (node->next != NULL) { node->next->prev = node->prev; }
-	if (this->head == node) {
-		assert(node->prev == NULL);
-		if (node->next != NULL) { assert(node->next->prev == NULL); }
-		this->head = node->next;
-	}
-	free(node);
-}
-
 static void borrow_allocator_free_all(borrow_allocator_t *this) {
 	if (this->head == NULL) {
 		return;
@@ -55,14 +42,6 @@ static void borrow_allocator_free_all(borrow_allocator_t *this) {
 	}
 	free(prev);
 	this->head = NULL;
-}
-
-static size_t borrow_allocator_count_allocations(borrow_allocator_t *this) {
-	size_t output = 0;
-	for (linked_allocation_node_t *node = this->head; node != NULL; node = node->next) {
-		output++;
-	}
-	return output;
 }
 
 static void *borrow_alloc_impl(void *this, size_t bytes) {

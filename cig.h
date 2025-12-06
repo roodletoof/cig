@@ -143,31 +143,6 @@ void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *fil
 	dyn_array_shrink(THIS, dyn_array_length(THIS));							\
   } while (0)
 
-typedef struct dyn_array_create_non_crashing_func_args {
-	allocator_t allocator;
-	size_t itemsize;
-	size_t initial_capacity;
-	const char *file;
-	size_t line;
-} dyn_array_create_non_crashing_func_args_t;
-void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args_t args);
-// This version returns a NULL pointer instead of crashing if the allocator return NULL.
-// It is up to you to check that the pointer returned isn't NULL
-#define dyn_array_create_non_crashing(ALLOCATOR, TYPE, ...)					\
-  ((TYPE *)dyn_array_create_non_crashing_func(								 \
-	  (dyn_array_create_non_crashing_func_args_t){.allocator = ALLOCATOR,	  \
-												  .itemsize = sizeof(TYPE),	\
-												  .file = __FILE__,			\
-												  .line = __LINE__,			\
-												  __VA_ARGS__}))
-// TODO: remove the non-crashing versions. they crash...
-// This version returns a NULL pointer instead of crashing if the allocator return NULL.
-// It is up to you to check that the pointer returned isn't NULL
-// Always reassign the array. if multiple variables reference the same growing
-// array, then you should be using pointer pointers.
-void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items, const char *file, int line);
-#define dyn_array_grow_non_crashing(THIS, N_NEW_ITEMS) dyn_array_grow_non_crashing_func(THIS, N_NEW_ITEMS)
-
 size_t dyn_array_length(void *this);
 size_t dyn_array_capacity(void *this);
 

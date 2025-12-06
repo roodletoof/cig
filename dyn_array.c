@@ -1,8 +1,18 @@
 #include "cig.h"
 #include <stdio.h>
 
+typedef struct dyn_array_create_non_crashing_func_args {
+	allocator_t allocator;
+	size_t itemsize;
+	size_t initial_capacity;
+	const char *file;
+	size_t line;
+} dyn_array_create_non_crashing_func_args_t;
+
+
+static inline void *todo_remove_create_func(dyn_array_create_non_crashing_func_args_t args);
 void *dyn_array_create_func(dyn_array_create_func_args_t args) {
-	void *bytes = dyn_array_create_non_crashing_func(
+	void *bytes = todo_remove_create_func(
 		(dyn_array_create_non_crashing_func_args_t) {
 			.allocator=args.allocator,
 			.itemsize=args.itemsize,
@@ -14,12 +24,15 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args) {
 	return bytes;
 }
 
+static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const char *file, int line);
 void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line) {
-	void *bytes = dyn_array_grow_non_crashing_func(this, n_new_items, file, line);
+	void *bytes = todo_remove_grow_func(this, n_new_items, file, line);
 	return bytes;
 }
 
-void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args_t args) {
+// These functions are from when there were non-crashing versions of these
+// allocating functions.
+static inline void *todo_remove_create_func(dyn_array_create_non_crashing_func_args_t args) {
 	dyn_array_header_t *header = allocator_alloc_func(
 		args.allocator,
 		sizeof(dyn_array_header_t) + args.itemsize * args.initial_capacity,
@@ -33,7 +46,7 @@ void *dyn_array_create_non_crashing_func(dyn_array_create_non_crashing_func_args
 	return &header->bytes;
 }
 
-void *dyn_array_grow_non_crashing_func(void *this, size_t n_new_items, const char *file, int line) {
+static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const char *file, int line) {
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
 	size_t new_size = header->size + n_new_items;
 
