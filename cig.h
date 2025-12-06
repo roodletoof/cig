@@ -78,10 +78,9 @@ allocator_t allocator_from_borrow(borrow_allocator_t *this);
 // with_borrow(foos_allocator) {bar = foo(foos_allocator, my_allocator); } Using
 // the return a keyword in the statement following this macro will cause a
 // guaranteed memory leak.
-#define with_borrow(NAME)													  \
-  for (allocator_t NAME = borrow_allocator_create(); NAME.this != NULL;		\
-	   NAME.this = (allocator_reset(NAME), NULL))							  \
-	for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++)
+#define with_borrow(NAME)\
+	for (allocator_t NAME = borrow_allocator_create(); NAME.this != NULL; NAME.this = (allocator_reset(NAME), NULL)) \
+	for (int UNIQUE = 0; UNIQUE < 1; UNIQUE++) \
 
 // arena allocator /////////////////////////////////////////////////////////////
 
