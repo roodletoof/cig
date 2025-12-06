@@ -9,4 +9,5 @@ Test(std_allocator, test) {
 	void *new_ptr = allocator_resize(this, ptr, 1024*1024*500);
 	cr_assert(new_ptr != ((void *)0), "non null from realloc");
 	cr_assert(new_ptr != ptr, "realloc is not the same ptr as malloc");
+	free(new_ptr);
 }

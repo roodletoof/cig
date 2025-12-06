@@ -92,14 +92,16 @@ typedef struct arena_allocator {
 	uint8_t *data;
 } arena_allocator_t;
 
-#define arena_allocator_value(INITIAL_CAPACITY) ((arena_allocator_t) { \
-	.allocator=borrow_allocator_create(), \
+#define arena_allocator_value(BACKING_ALLOCATOR, INITIAL_CAPACITY) ((arena_allocator_t) { \
+	.allocator=BACKING_ALLOCATOR, \
 	.size=0, \
 	.capacity=INITIAL_CAPACITY, \
 	.data=NULL \
 })
 
 allocator_t allocator_from_arena(arena_allocator_t *this);
+#define arena_allocator_create(BACKING_ALLOCATOR, INITIAL_CAPACITY) \
+	allocator_from_arena(&arena_allocator_value(BACKING_ALLOCATOR, INITIAL_CAPACITY))
 
 // dynamic arrays //////////////////////////////////////////////////////////////
 

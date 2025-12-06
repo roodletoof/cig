@@ -1,6 +1,6 @@
 #include "cig.h"
 
-void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes) {
+static void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes) {
 	size_t address_of_new_data = (size_t) &this->data[this->size];
 	size_t offset = address_of_new_data % MAX_ALIGN;
 	size_t new_size = this->size + offset + bytes;
@@ -13,7 +13,7 @@ void *buffer_allocator_alloc(buffer_allocator_t *this, size_t bytes) {
 	return ptr;
 }
 
-void *buffer_allocator_resize(buffer_allocator_t *this, void *old_ptr, size_t bytes) {
+static void *buffer_allocator_resize(buffer_allocator_t *this, void *old_ptr, size_t bytes) {
 	void *new_ptr = buffer_allocator_alloc(this, bytes);
 	if (new_ptr == NULL) {
 		return NULL;
@@ -26,7 +26,7 @@ void *buffer_allocator_resize(buffer_allocator_t *this, void *old_ptr, size_t by
 	return new_ptr;
 }
 
-void buffer_allocator_reset(buffer_allocator_t *this) {
+static void buffer_allocator_reset(buffer_allocator_t *this) {
 	this->size = 0;
 }
 

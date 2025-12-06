@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
-void *borrow_allocator_alloc_func(borrow_allocator_t *this, size_t bytes) {
+static void *borrow_allocator_alloc_func(borrow_allocator_t *this, size_t bytes) {
 	linked_allocation_node_t *node = malloc(sizeof(*this->head) + bytes);
 	if (node == NULL) { return NULL; }
 	node->prev = NULL;
@@ -17,7 +17,7 @@ void *borrow_allocator_alloc_func(borrow_allocator_t *this, size_t bytes) {
 	return &node->data;
 }
 
-void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_ptr, size_t bytes) {
+static void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_ptr, size_t bytes) {
 	linked_allocation_node_t *old_node = PTR_FROM_FIELD_PTR(linked_allocation_node_t, data, old_ptr);
 	linked_allocation_node_t *new_node = realloc(old_node, sizeof(*old_node) + bytes);
 	if (new_node == NULL) { return NULL; }
@@ -31,7 +31,7 @@ void *borrow_allocator_resize_func(borrow_allocator_t *this, void *old_ptr, size
 }
 
 // TODO: remove
-void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr) {
+static void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr) {
 	linked_allocation_node_t *node = PTR_FROM_FIELD_PTR(linked_allocation_node_t, data, old_ptr);
 	if (node->prev != NULL) { node->prev->next = node->next; }
 	if (node->next != NULL) { node->next->prev = node->prev; }
@@ -43,7 +43,7 @@ void borrow_allocator_free(borrow_allocator_t *this, void *old_ptr) {
 	free(node);
 }
 
-void borrow_allocator_free_all(borrow_allocator_t *this) {
+static void borrow_allocator_free_all(borrow_allocator_t *this) {
 	if (this->head == NULL) {
 		return;
 	}
@@ -57,7 +57,7 @@ void borrow_allocator_free_all(borrow_allocator_t *this) {
 	this->head = NULL;
 }
 
-size_t borrow_allocator_count_allocations(borrow_allocator_t *this) {
+static size_t borrow_allocator_count_allocations(borrow_allocator_t *this) {
 	size_t output = 0;
 	for (linked_allocation_node_t *node = this->head; node != NULL; node = node->next) {
 		output++;
