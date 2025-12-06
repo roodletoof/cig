@@ -250,6 +250,32 @@ bool scan_identifier(scanner_t *s);
 bool scan_string_literal(scanner_t *s);
 bool scanner_print_errors(scanner_t *s, FILE *fp);
 
+// string builder //////////////////////////////////////////////////////////////
+typedef struct string_builder_node {
+	struct string_builder_node *next;
+	size_t length;
+	const char *string;
+} string_builder_node_t;
+
+typedef struct string_builder {
+	string_builder_node_t *head;
+	string_builder_node_t *tail;
+	allocator_t allocator;
+} string_builder_t;
+
+string_builder_t sb_create(allocator_t builder_allocator);
+// assumes the provided string will live until sb_build is called.
+void sb_add_string(string_builder_t *this, const char *string);
+void sb_add_i64(string_builder_t *this, int64_t i64);
+void sb_add_i32(string_builder_t *this, int32_t i32);
+void sb_add_i16(string_builder_t *this, int16_t i16);
+void sb_add_i8(string_builder_t *this, int8_t i8);
+void sb_add_u64(string_builder_t *this, uint64_t u64);
+void sb_add_u32(string_builder_t *this, uint32_t u32);
+void sb_add_u16(string_builder_t *this, uint16_t u16);
+void sb_add_u8(string_builder_t *this, uint8_t u8);
+const char *sb_build(string_builder_t *this, allocator_t output_allocator);
+
 #ifdef CIG_IMPL
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
@@ -279,6 +305,7 @@ void allocator_reset(allocator_t this) {
 #include "dyn_array.c"
 #include "cli.c"
 #include "scanner.c"
+#include "string_builder.c"
 
 #endif // CIG_IMPL
 #endif // CIG_H

@@ -34,7 +34,7 @@ void scanner_error(scanner_t *s, const char *message) {
 	}
 	// need 40 bytes for pair of largest possible 64 bit values, then some for
 	// ':' and ' ' characters. Just rounded up to 64 because reasons.
-	size_t length = strlen(s->name) + strlen(message) + 64;
+	size_t length = strlen(s->name) + 1 + strlen(message) + 1 + 64;
 	char *buf = allocator_alloc(s->allocator, length);
 	snprintf(
 		buf,
