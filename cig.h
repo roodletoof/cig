@@ -273,6 +273,7 @@ void sb_add_u64(string_builder_t *this, uint64_t u64);
 void sb_add_u32(string_builder_t *this, uint32_t u32);
 void sb_add_u16(string_builder_t *this, uint16_t u16);
 void sb_add_u8(string_builder_t *this, uint8_t u8);
+void sb_add_substring(string_builder_t *this, const char *string, size_t substring_length);
 const char *sb_build(string_builder_t *this, allocator_t output_allocator);
 
 #ifdef CIG_IMPL
