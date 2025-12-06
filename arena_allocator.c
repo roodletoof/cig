@@ -9,7 +9,7 @@ static void arena_reset(arena_allocator_t *this) {
 		allocator_reset(this->allocator);
 		this->data = NULL;
 	}
-	if (this->data == NULL) {
+	if (this->data == NULL && this->capacity != 0) {
 		this->data = allocator_alloc(this->allocator, this->capacity);
 	}
 	this->size = 0;
