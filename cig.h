@@ -233,6 +233,7 @@ void scanner_error(scanner_t *s, const char *message);
 void scanner_error_and_recover(scanner_t *s, const char *message);
 bool scan_eof(scanner_t *s);
 bool scan_literal(scanner_t *s, const char *lit);
+int scan_repeat_literal(scanner_t *s, const char *lit);
 bool scan_whitespace(scanner_t *s);
 bool scan_digit(scanner_t *s);
 bool scan_i64(scanner_t *s);

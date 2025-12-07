@@ -76,6 +76,14 @@ bool scan_literal(scanner_t *s, const char *lit) {
 	return false;
 }
 
+int scan_repeat_literal(scanner_t *s, const char *lit) {
+	int n_repeats = 0;
+	while (scan_literal(s, lit)) {
+		n_repeats++;
+	}
+	return n_repeats;
+}
+
 bool scan_whitespace(scanner_t *s) {
 	const char *save = s->cur;
 	while (isspace((unsigned char)*s->cur)) s->cur++;
