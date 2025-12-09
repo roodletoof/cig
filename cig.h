@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; long double ld; } any_align_t;
 #define MAX_ALIGN ((size_t) sizeof(any_align_t))
@@ -106,9 +107,13 @@ allocator_t allocator_from_arena(arena_allocator_t *this);
 // dynamic arrays //////////////////////////////////////////////////////////////
 
 typedef struct dyn_array_header {
-	size_t size, capacity, itemsize;
+	size_t n_items, capacity, itemsize;
 	allocator_t allocator;
-	uint8_t bytes[];
+	union {
+		// allocates a little more memory than needed, but who cares?
+		uint8_t bytes[1];
+		any_align_t _[1];
+	};
 } dyn_array_header_t;
 
 typedef struct dyn_array_create_func_args {
@@ -142,7 +147,7 @@ void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *fil
 #define arr_reset(THIS)\
   do {\
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, THIS);\
-	header->size = 0;\
+	header->n_items = 0;\
   } while (0)
 
 size_t arr_len(void *this);
@@ -155,6 +160,28 @@ size_t arr_cap(void *this);
 
 
 #define arr_pop(THIS) (arr_shrink(THIS, 1), THIS[arr_len(THIS)])
+
+
+/* Compile-time assert that works in expression contexts */
+#define STATIC_ASSERT(expr) ((void)sizeof(char[(expr) ? 1 : -1]))
+
+
+bool dyn_array_contains_func(void *this, uint8_t *value);
+
+/*
+    arr_contains(THIS, TYPE, VALUE)
+
+    - SIZE CHECK: compile-time check that sizeof(*THIS) == sizeof(TYPE)
+    - TYPE is the type of the value to search for
+    - VALUE is stored in a compound literal of TYPE
+    - Pure C99, no extensions needed
+    - Callers with typeof support can make wrapper macros
+*/
+#define arr_contains(THIS, TYPE, VALUE)\
+    (\
+        STATIC_ASSERT(sizeof(*(THIS)) == sizeof(TYPE)),\
+        dyn_array_contains_func((THIS), (uint8_t*)&(TYPE){(VALUE)})\
+    )
 
 // CLI /////////////////////////////////////////////////////////////////////////
 

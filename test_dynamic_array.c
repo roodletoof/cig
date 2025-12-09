@@ -50,3 +50,21 @@ Test(dynamic_arrays, pop) {
 		}
 	}
 }
+
+Test(dynamic_arrays, contains) {
+	with_borrow(alloc) {
+		int *numbers = make_arr(alloc, int);
+		arr_append(numbers, 20);
+		cr_expect(arr_contains(numbers, int, 20));
+		arr_reset(numbers);
+
+		for ( size_t y = 0; y < 1000; y++ ) {
+			for ( size_t i = 0; i < 100; i++ ) {
+				if (!arr_contains(numbers, int, i)) {
+					arr_append(numbers, i);
+				}
+			}
+		}
+		cr_assert_eq(arr_len(numbers), 100);
+	}
+}

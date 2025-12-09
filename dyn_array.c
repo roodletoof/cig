@@ -39,7 +39,7 @@ static inline void *todo_remove_create_func(dyn_array_create_non_crashing_func_a
 		args.file,
 		args.line
 	);
-	header->size = 0;
+	header->n_items = 0;
 	header->capacity = args.initial_capacity;
 	header->itemsize = args.itemsize;
 	header->allocator = args.allocator;
@@ -48,7 +48,7 @@ static inline void *todo_remove_create_func(dyn_array_create_non_crashing_func_a
 
 static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const char *file, int line) {
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-	size_t new_size = header->size + n_new_items;
+	size_t new_size = header->n_items + n_new_items;
 
 	if (header->capacity < new_size) {
 		size_t cap_times_2 = header->capacity * 2;
@@ -65,7 +65,7 @@ static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const 
 		);
 		header->capacity = new_capacity;
 	}
-	header->size = new_size;
+	header->n_items = new_size;
 	return &header->bytes;
 }
 
@@ -80,18 +80,35 @@ void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *fil
 		exit(1);
 	}
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-	header->size -= n_items_to_remove;
+	header->n_items -= n_items_to_remove;
 }
 
 size_t arr_len(void *this) {
 	if (this == NULL) { return 0; }
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-	return header->size;
+	return header->n_items;
 
 }
 
-size_t dyn_array_capacity(void *this) {
+size_t arr_cap(void *this) {
 	if (this == NULL) { return 0; }
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
 	return header->capacity;
+}
+
+bool dyn_array_contains_func(void *this, uint8_t *value) {
+	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+	for (size_t i = 0; i < header->n_items; i++) {
+		bool is_equal = true;
+		for (size_t off = 0; off < header->itemsize; off++) {
+			if (header->bytes[i*header->itemsize+off] != value[off]) {
+				is_equal = false;
+				break;
+			}
+		}
+		if (is_equal) {
+			return true;
+		}
+	}
+	return false;
 }
