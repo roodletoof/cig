@@ -119,38 +119,42 @@ typedef struct dyn_array_create_func_args {
 	int line;
 } dyn_array_create_func_args_t;
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
-#define dyn_array_create(ALLOCATOR, TYPE, ...)								 \
-  ((TYPE *)dyn_array_create_func(											  \
-	  (dyn_array_create_func_args_t){.allocator = ALLOCATOR,				   \
-									 .itemsize = sizeof(TYPE),				 \
-									 .file = __FILE__,						 \
-									 .line = __LINE__,						 \
-									 __VA_ARGS__}))
+
+#define make_arr(ALLOCATOR, TYPE, ...) ((TYPE *)dyn_array_create_func((dyn_array_create_func_args_t){ \
+	.allocator = ALLOCATOR, \
+	.itemsize = sizeof(TYPE), \
+	.file = __FILE__, \
+	.line = __LINE__, \
+	__VA_ARGS__ \
+}))
+
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
 void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line);
 void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *file, int line);
 
-#define dyn_array_grow(THIS, N_NEW_ITEMS)									  \
+#define arr_grow(THIS, N_NEW_ITEMS) \
   dyn_array_grow_func(THIS, N_NEW_ITEMS, __FILE__, __LINE__)
 
-#define dyn_array_shrink(THIS, N_ITEMS_TO_REMOVE)							  \
-  dyn_array_shrink_func(THIS, N_ITEMS_TO_REMOVE, __FILE__, __LINE__)
+#define arr_shrink(THIS, N_ITEMS_TO_REMOVE) \
+	dyn_array_shrink_func(THIS, N_ITEMS_TO_REMOVE, __FILE__, __LINE__)
 
-#define dyn_array_reset(THIS)												  \
-  do {																		 \
-	dyn_array_shrink(THIS, dyn_array_length(THIS));							\
+#define arr_reset(THIS)\
+  do {\
+	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, THIS);\
+	header->size = 0;\
   } while (0)
 
-size_t dyn_array_length(void *this);
-size_t dyn_array_capacity(void *this);
+size_t arr_len(void *this);
+size_t arr_cap(void *this);
 
-#define dyn_array_append(THIS, VAL) do { \
-	THIS = dyn_array_grow(THIS, 1); \
-	THIS[dyn_array_length(THIS)-1] = VAL; \
+#define arr_append(THIS, VAL) do { \
+	THIS = arr_grow(THIS, 1); \
+	THIS[arr_len(THIS)-1] = VAL; \
 } while(0)
 
-#define dyn_array_pop(THIS) (dyn_array_shrink(THIS, 1), THIS[dyn_array_length(THIS)])
+
+#define arr_pop(THIS) (arr_shrink(THIS, 1), THIS[arr_len(THIS)])
 
 // CLI /////////////////////////////////////////////////////////////////////////
 

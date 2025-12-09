@@ -70,7 +70,7 @@ static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const 
 }
 
 void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *file, int line) {
-	if (dyn_array_length(this) < n_items_to_remove) {
+	if (arr_len(this) < n_items_to_remove) {
 		fprintf(
 			stderr,
 			"%s:%d: tried to remove more items than contained in dynamic array.\n",
@@ -83,7 +83,7 @@ void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *fil
 	header->size -= n_items_to_remove;
 }
 
-size_t dyn_array_length(void *this) {
+size_t arr_len(void *this) {
 	if (this == NULL) { return 0; }
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
 	return header->size;
