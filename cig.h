@@ -177,11 +177,11 @@ bool dyn_array_contains_func(void *this, uint8_t *value);
     - Pure C99, no extensions needed
     - Callers with typeof support can make wrapper macros
 */
-#define arr_contains(THIS, TYPE, VALUE)\
-    (\
-        STATIC_ASSERT(sizeof(*(THIS)) == sizeof(TYPE)),\
-        dyn_array_contains_func((THIS), (uint8_t*)&(TYPE){(VALUE)})\
-    )
+#define arr_contains(THIS, ...)\
+	(\
+		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(__VA_ARGS__))),\
+		dyn_array_contains_func((THIS), (uint8_t*)(__VA_ARGS__))\
+	)
 
 // CLI /////////////////////////////////////////////////////////////////////////
 
