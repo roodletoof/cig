@@ -39,7 +39,7 @@ void allocator_reset(allocator_t this);
 #define allocator_resize(this, old_ptr, bytes) allocator_resize_func(this, old_ptr, bytes, __FILE__, __LINE__)
 
 // forever_allocator ///////////////////////////////////////////////////////////
-allocator_t forever_allocator();
+allocator_t forever_allocator(void);
 
 // buffer_allocator ////////////////////////////////////////////////////////////
 typedef struct buffer_allocator {

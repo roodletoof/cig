@@ -60,7 +60,7 @@ Test(dynamic_arrays, contains) {
 
 		for ( size_t y = 0; y < 1000; y++ ) {
 			for ( size_t i = 0; i < 100; i++ ) {
-				if (!arr_contains(numbers, int, i)) {
+				if (!arr_contains(numbers, &(int){i})) {
 					arr_append(numbers, i);
 				}
 			}

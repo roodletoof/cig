@@ -18,7 +18,7 @@ static const allocator_vtbl_t forever_vtbl = {
 	.reset = forever_no_op,
 };
 
-allocator_t forever_allocator() {
+allocator_t forever_allocator(void) {
 	return (allocator_t) {
 		.this=NULL,
 		.vtbl=&forever_vtbl,
