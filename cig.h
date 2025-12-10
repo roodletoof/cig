@@ -153,9 +153,9 @@ void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *fil
 size_t arr_len(void *this);
 size_t arr_cap(void *this);
 
-#define arr_append(THIS, VAL) do { \
+#define arr_append(THIS, ...) do { \
 	THIS = arr_grow(THIS, 1); \
-	THIS[arr_len(THIS)-1] = VAL; \
+	THIS[arr_len(THIS)-1] = __VA_ARGS__; \
 } while(0)
 
 
