@@ -55,7 +55,7 @@ Test(dynamic_arrays, contains) {
 	with_borrow(alloc) {
 		int *numbers = make_arr(alloc, int);
 		arr_append(numbers, 20);
-		cr_expect(arr_contains(numbers, int, 20));
+		cr_expect(arr_contains(numbers, &(int){20}));
 		arr_reset(numbers);
 
 		for ( size_t y = 0; y < 1000; y++ ) {
