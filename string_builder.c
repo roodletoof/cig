@@ -122,3 +122,13 @@ const char *sb_build(
 	this->tail = NULL;
 	return buffer;
 }
+
+void sb_fprint(string_builder_t *this, FILE *dest) {
+	for (
+		string_builder_node_t *node = this->head;
+		node != NULL;
+		node = node->next
+	) {
+		fprintf(dest, "%s", node->string);
+	}
+}
