@@ -321,3 +321,141 @@ Test(arena_allocator, large_resize_chain) {
 		}
 	}
 }
+
+Test(arena_allocator, nested_arena_basic) {
+	// Test using an arena as backing for another arena
+	with_borrow(backing) {
+		allocator_t outer_arena = arena_allocator_create(backing, 100 * KB);
+		allocator_reset(outer_arena);
+		
+		allocator_t inner_arena = arena_allocator_create(outer_arena, 10 * KB);
+		allocator_reset(inner_arena);
+		
+		// Allocate from inner arena
+		int *data = allocator_alloc(inner_arena, sizeof(int) * 10);
+		for (int i = 0; i < 10; i++) {
+			data[i] = i * 5;
+		}
+		
+		// Verify data
+		for (int i = 0; i < 10; i++) {
+			cr_assert_eq(data[i], i * 5);
+		}
+		
+		// Reset inner arena and reallocate
+		allocator_reset(inner_arena);
+		int *data2 = allocator_alloc(inner_arena, sizeof(int) * 20);
+		for (int i = 0; i < 20; i++) {
+			data2[i] = i * 3;
+		}
+		
+		// Verify new data
+		for (int i = 0; i < 20; i++) {
+			cr_assert_eq(data2[i], i * 3);
+		}
+	}
+}
+
+Test(arena_allocator, nested_arena_with_dynamic_arrays) {
+	// Test nested arenas with dynamic arrays
+	with_borrow(backing) {
+		allocator_t outer_arena = arena_allocator_create(backing, 100 * KB);
+		allocator_reset(outer_arena);
+		
+		allocator_t inner_arena = arena_allocator_create(outer_arena, 20 * KB);
+		allocator_reset(inner_arena);
+		
+		// Create dynamic array in inner arena
+		int *arr = make_arr(inner_arena, int);
+		for (int i = 0; i < 100; i++) {
+			arr_append(arr, i * 7);
+		}
+		
+		// Verify array
+		cr_assert_eq(arr_len(arr), 100);
+		for (int i = 0; i < 100; i++) {
+			cr_assert_eq(arr[i], i * 7);
+		}
+	}
+}
+
+Test(arena_allocator, nested_arena_multiple_resets) {
+	// Test resetting nested arenas multiple times
+	with_borrow(backing) {
+		allocator_t outer_arena = arena_allocator_create(backing, 100 * KB);
+		allocator_t inner_arena = arena_allocator_create(outer_arena, 10 * KB);
+		
+		for (int iteration = 0; iteration < 10; iteration++) {
+			allocator_reset(outer_arena);
+			allocator_reset(inner_arena);
+			
+			// Allocate in inner arena
+			int *data = allocator_alloc(inner_arena, sizeof(int) * 50);
+			for (int i = 0; i < 50; i++) {
+				data[i] = iteration * 100 + i;
+			}
+			
+			// Verify
+			for (int i = 0; i < 50; i++) {
+				cr_assert_eq(data[i], iteration * 100 + i);
+			}
+		}
+	}
+}
+
+Test(arena_allocator, deeply_nested_arenas) {
+	// Test multiple levels of nesting
+	with_borrow(backing) {
+		allocator_t arena1 = arena_allocator_create(backing, 100 * KB);
+		allocator_reset(arena1);
+		
+		allocator_t arena2 = arena_allocator_create(arena1, 50 * KB);
+		allocator_reset(arena2);
+		
+		allocator_t arena3 = arena_allocator_create(arena2, 20 * KB);
+		allocator_reset(arena3);
+		
+		// Allocate from deepest arena
+		int *data = allocator_alloc(arena3, sizeof(int) * 100);
+		for (int i = 0; i < 100; i++) {
+			data[i] = i * 11;
+		}
+		
+		// Verify
+		for (int i = 0; i < 100; i++) {
+			cr_assert_eq(data[i], i * 11);
+		}
+		
+		// Create dynamic array in deepest arena
+		int *arr = make_arr(arena3, int);
+		for (int i = 0; i < 50; i++) {
+			arr_append(arr, i * 13);
+		}
+		
+		cr_assert_eq(arr_len(arr), 50);
+		for (int i = 0; i < 50; i++) {
+			cr_assert_eq(arr[i], i * 13);
+		}
+	}
+}
+
+Test(arena_allocator, nested_arena_resize) {
+	// Test resizing allocations in nested arenas
+	with_borrow(backing) {
+		allocator_t outer_arena = arena_allocator_create(backing, 100 * KB);
+		allocator_reset(outer_arena);
+		
+		allocator_t inner_arena = arena_allocator_create(outer_arena, 20 * KB);
+		allocator_reset(inner_arena);
+		
+		// Allocate and resize in inner arena
+		char *str = allocator_alloc(inner_arena, 10);
+		strcpy(str, "Hello");
+		
+		str = allocator_resize(inner_arena, str, 30);
+		cr_assert_str_eq(str, "Hello");
+		
+		strcat(str, " from nested arena!");
+		cr_assert_str_eq(str, "Hello from nested arena!");
+	}
+}
