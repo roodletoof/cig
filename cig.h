@@ -339,6 +339,10 @@ void sb_add_substring(string_builder_t *this, const char *string, size_t substri
 const char *sb_build_and_clear(string_builder_t *this, allocator_t output_allocator);
 void sb_fprint_and_clear(string_builder_t *this, FILE *dest);
 
+// file_io /////////////////////////////////////////////////////////////////////
+char *read_entire_file(const char *path, allocator_t allocator);
+char **read_all_file_lines(const char *path, allocator_t allocator);
+
 #ifdef CIG_IMPL
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
@@ -369,6 +373,7 @@ void allocator_reset(allocator_t this) {
 #include "cli.c"
 #include "scanner.c"
 #include "string_builder.c"
+#include "file_io.c"
 
 #endif // CIG_IMPL
 
