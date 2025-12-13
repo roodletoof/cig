@@ -325,7 +325,7 @@ typedef struct string_builder {
 } string_builder_t;
 
 string_builder_t sb_create(allocator_t builder_allocator);
-// assumes the provided string will live until sb_build is called.
+// assumes the provided string will live until sb_build_and_clear is called.
 void sb_add_string(string_builder_t *this, const char *string);
 void sb_add_i64(string_builder_t *this, int64_t i64);
 void sb_add_i32(string_builder_t *this, int32_t i32);
@@ -336,8 +336,8 @@ void sb_add_u32(string_builder_t *this, uint32_t u32);
 void sb_add_u16(string_builder_t *this, uint16_t u16);
 void sb_add_u8(string_builder_t *this, uint8_t u8);
 void sb_add_substring(string_builder_t *this, const char *string, size_t substring_length);
-const char *sb_build(string_builder_t *this, allocator_t output_allocator);
-void sb_fprint(string_builder_t *this, FILE *dest);
+const char *sb_build_and_clear(string_builder_t *this, allocator_t output_allocator);
+void sb_fprint_and_clear(string_builder_t *this, FILE *dest);
 
 #ifdef CIG_IMPL
 
