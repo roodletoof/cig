@@ -91,7 +91,7 @@ void sb_add_substring(string_builder_t *this, const char *string, size_t substri
 	sb_add_string(this, buffer);
 }
 
-const char *sb_build(
+const char *sb_build_and_clear(
 	string_builder_t *this,
 	allocator_t output_allocator
 ) {
@@ -123,7 +123,7 @@ const char *sb_build(
 	return buffer;
 }
 
-void sb_fprint(string_builder_t *this, FILE *dest) {
+void sb_fprint_and_clear(string_builder_t *this, FILE *dest) {
 	for (
 		string_builder_node_t *node = this->head;
 		node != NULL;
@@ -131,4 +131,6 @@ void sb_fprint(string_builder_t *this, FILE *dest) {
 	) {
 		fprintf(dest, "%s", node->string);
 	}
+	this->head = NULL;
+	this->tail = NULL;
 }
