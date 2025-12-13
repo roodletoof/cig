@@ -161,27 +161,36 @@ size_t arr_cap(void *this);
 
 #define arr_pop(THIS) (arr_shrink(THIS, 1), THIS[arr_len(THIS)])
 
-
-/* Compile-time assert that works in expression contexts */
 #define STATIC_ASSERT(expr) ((void)sizeof(char[(expr) ? 1 : -1]))
-
 
 bool dyn_array_contains_func(void *this, uint8_t *value);
 
-/*
-    arr_contains(THIS, TYPE, VALUE)
-
-    - SIZE CHECK: compile-time check that sizeof(*THIS) == sizeof(TYPE)
-    - TYPE is the type of the value to search for
-    - VALUE is stored in a compound literal of TYPE
-    - Pure C99, no extensions needed
-    - Callers with typeof support can make wrapper macros
-*/
 #define arr_contains(THIS, ...)\
 	(\
 		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(__VA_ARGS__))),\
 		dyn_array_contains_func((THIS), (uint8_t*)(__VA_ARGS__))\
 	)
+
+// Comparison function: returns true if a equals b, false otherwise
+typedef bool (*dyn_array_eq_fn)(const void *a, const void *b);
+
+bool dyn_array_contains_cmp_func(void *this, uint8_t *value, dyn_array_eq_fn eq);
+
+#define arr_contains_cmp(THIS, EQ_FN, ...)\
+	(\
+		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(__VA_ARGS__))),\
+		dyn_array_contains_cmp_func((THIS), (uint8_t*)(__VA_ARGS__), (EQ_FN))\
+	)
+
+// Comparison function for sorting: returns -1 if a < b, 0 if a == b, 1 if a > b
+typedef int (*dyn_array_cmp_fn)(const void *a, const void *b);
+
+void dyn_array_insert_sorted_func(void **this_ptr, const void *value, dyn_array_cmp_fn cmp, const char *file, int line);
+
+#define arr_insert_sorted(THIS, VALUE, CMP_FN) do { \
+	typeof((THIS)[0]) _tmp_value = (VALUE); \
+	dyn_array_insert_sorted_func((void**)&(THIS), &_tmp_value, (CMP_FN), __FILE__, __LINE__); \
+} while(0)
 
 // CLI /////////////////////////////////////////////////////////////////////////
 
@@ -343,4 +352,5 @@ void allocator_reset(allocator_t this) {
 #include "string_builder.c"
 
 #endif // CIG_IMPL
+
 #endif // CIG_H

@@ -186,15 +186,15 @@ Test(arena_allocator, dyn_array_resize_pattern) {
 		allocator_t arena = arena_allocator_create(backing, 10 * KB);
 		allocator_reset(arena);
 		
-		int *arr = dyn_array_create(arena, int);
+		int *arr = make_arr(arena, int);
 		
 		// Add 100 elements, forcing multiple resizes
 		for (int i = 0; i < 100; i++) {
-			dyn_array_append(arr, i * 3);
+			arr_append(arr, i * 3);
 		}
 		
 		// Verify all elements
-		cr_assert_eq(dyn_array_length(arr), 100);
+		cr_assert_eq(arr_len(arr), 100);
 		for (int i = 0; i < 100; i++) {
 			cr_assert_eq(arr[i], i * 3, "Expected arr[%d] = %d, got %d", i, i * 3, arr[i]);
 		}
@@ -207,32 +207,32 @@ Test(arena_allocator, multiple_arrays_resize) {
 		allocator_t arena = arena_allocator_create(backing, 20 * KB);
 		allocator_reset(arena);
 		
-		int *arr1 = dyn_array_create(arena, int);
-		int *arr2 = dyn_array_create(arena, int);
+		int *arr1 = make_arr(arena, int);
+		int *arr2 = make_arr(arena, int);
 		
 		// Add to arr1
 		for (int i = 0; i < 50; i++) {
-			dyn_array_append(arr1, i);
+			arr_append(arr1, i);
 		}
 		
 		// Add to arr2
 		for (int i = 0; i < 30; i++) {
-			dyn_array_append(arr2, i * 2);
+			arr_append(arr2, i * 2);
 		}
 		
 		// Add more to arr1
 		for (int i = 50; i < 100; i++) {
-			dyn_array_append(arr1, i);
+			arr_append(arr1, i);
 		}
 		
 		// Verify arr1
-		cr_assert_eq(dyn_array_length(arr1), 100);
+		cr_assert_eq(arr_len(arr1), 100);
 		for (int i = 0; i < 100; i++) {
 			cr_assert_eq(arr1[i], i);
 		}
 		
 		// Verify arr2
-		cr_assert_eq(dyn_array_length(arr2), 30);
+		cr_assert_eq(arr_len(arr2), 30);
 		for (int i = 0; i < 30; i++) {
 			cr_assert_eq(arr2[i], i * 2);
 		}
@@ -267,21 +267,21 @@ Test(arena_allocator, nested_structures_with_resize) {
 		allocator_reset(arena);
 		
 		// Create array of int pointers (like dyn_array of dyn_arrays)
-		int **rows = dyn_array_create(arena, int*);
+		int **rows = make_arr(arena, int*);
 		
 		// Add 5 rows
 		for (int i = 0; i < 5; i++) {
-			int *row = dyn_array_create(arena, int);
+			int *row = make_arr(arena, int);
 			for (int j = 0; j < 10; j++) {
-				dyn_array_append(row, i * 10 + j);
+				arr_append(row, i * 10 + j);
 			}
-			dyn_array_append(rows, row);
+			arr_append(rows, row);
 		}
 		
 		// Verify data
-		cr_assert_eq(dyn_array_length(rows), 5);
+		cr_assert_eq(arr_len(rows), 5);
 		for (int i = 0; i < 5; i++) {
-			cr_assert_eq(dyn_array_length(rows[i]), 10);
+			cr_assert_eq(arr_len(rows[i]), 10);
 			for (int j = 0; j < 10; j++) {
 				cr_assert_eq(rows[i][j], i * 10 + j);
 			}

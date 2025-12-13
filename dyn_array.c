@@ -1,38 +1,7 @@
 #include "cig.h"
 #include <stdio.h>
 
-typedef struct dyn_array_create_non_crashing_func_args {
-	allocator_t allocator;
-	size_t itemsize;
-	size_t initial_capacity;
-	const char *file;
-	size_t line;
-} dyn_array_create_non_crashing_func_args_t;
-
-
-static inline void *todo_remove_create_func(dyn_array_create_non_crashing_func_args_t args);
 void *dyn_array_create_func(dyn_array_create_func_args_t args) {
-	void *bytes = todo_remove_create_func(
-		(dyn_array_create_non_crashing_func_args_t) {
-			.allocator=args.allocator,
-			.itemsize=args.itemsize,
-			.initial_capacity=args.initial_capacity,
-			.file=args.file,
-			.line=args.line
-		}
-	);
-	return bytes;
-}
-
-static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const char *file, int line);
-void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line) {
-	void *bytes = todo_remove_grow_func(this, n_new_items, file, line);
-	return bytes;
-}
-
-// These functions are from when there were non-crashing versions of these
-// allocating functions.
-static inline void *todo_remove_create_func(dyn_array_create_non_crashing_func_args_t args) {
 	dyn_array_header_t *header = allocator_alloc_func(
 		args.allocator,
 		sizeof(dyn_array_header_t) + args.itemsize * args.initial_capacity,
@@ -46,7 +15,7 @@ static inline void *todo_remove_create_func(dyn_array_create_non_crashing_func_a
 	return &header->bytes;
 }
 
-static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const char *file, int line) {
+void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line) {
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
 	size_t new_size = header->n_items + n_new_items;
 
@@ -68,6 +37,7 @@ static inline void *todo_remove_grow_func(void *this, size_t n_new_items, const 
 	header->n_items = new_size;
 	return &header->bytes;
 }
+
 
 void dyn_array_shrink_func(void *this, size_t n_items_to_remove, const char *file, int line) {
 	if (arr_len(this) < n_items_to_remove) {
@@ -111,4 +81,52 @@ bool dyn_array_contains_func(void *this, uint8_t *value) {
 		}
 	}
 	return false;
+}
+
+bool dyn_array_contains_cmp_func(void *this, uint8_t *value, dyn_array_eq_fn eq) {
+	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+	size_t itemsize = header->itemsize;
+	
+	for (size_t i = 0; i < header->n_items; i++) {
+		void *element = &header->bytes[i * itemsize];
+		if (eq(element, value)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void dyn_array_insert_sorted_func(void **this_ptr, const void *value, dyn_array_cmp_fn cmp, const char *file, int line) {
+	void *this = *this_ptr;
+	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+	
+	// First append the value
+	this = dyn_array_grow_func(this, 1, file, line);
+	*this_ptr = this;
+	header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+	
+	size_t itemsize = header->itemsize;
+	size_t n_items = header->n_items;
+	
+	// Copy value to the end
+	memcpy(&header->bytes[(n_items - 1) * itemsize], value, itemsize);
+	
+	// Bubble it into the correct position from the back
+	size_t pos = n_items - 1;
+	while (pos > 0) {
+		void *a = &header->bytes[(pos - 1) * itemsize];
+		void *b = &header->bytes[pos * itemsize];
+		
+		if (cmp(a, b) <= 0) {
+			break; // Already in correct position
+		}
+		
+		// Swap using a temporary buffer
+		uint8_t temp[itemsize];
+		memcpy(temp, a, itemsize);
+		memcpy(a, b, itemsize);
+		memcpy(b, temp, itemsize);
+		
+		pos--;
+	}
 }
