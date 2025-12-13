@@ -180,6 +180,14 @@ size_t arr_cap(void *this);
 
 #define arr_pop(THIS) (arr_shrink(THIS, 1), THIS[arr_len(THIS)])
 
+void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int line);
+
+#define arr_get(THIS, INDEX) \
+	(dyn_array_bounds_check_func(THIS, INDEX, __FILE__, __LINE__), (THIS)[INDEX])
+
+#define arr_set(THIS, INDEX, VALUE) \
+	(dyn_array_bounds_check_func(THIS, INDEX, __FILE__, __LINE__), (THIS)[INDEX] = (VALUE))
+
 #define STATIC_ASSERT(expr) ((void)sizeof(char[(expr) ? 1 : -1]))
 
 bool dyn_array_contains_func(void *this, uint8_t *value);

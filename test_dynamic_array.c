@@ -293,3 +293,70 @@ Test(dynamic_arrays, contains_cmp_key_value_map) {
 	}
 }
 
+Test(dynamic_arrays, get_valid_indices) {
+	with_borrow(alloc) {
+		int *arr = make_arr(alloc, int);
+		arr_append(arr, 10);
+		arr_append(arr, 20);
+		arr_append(arr, 30);
+		arr_append(arr, 40);
+		
+		cr_assert_eq(arr_get(arr, 0), 10);
+		cr_assert_eq(arr_get(arr, 1), 20);
+		cr_assert_eq(arr_get(arr, 2), 30);
+		cr_assert_eq(arr_get(arr, 3), 40);
+	}
+}
+
+Test(dynamic_arrays, set_valid_indices) {
+	with_borrow(alloc) {
+		int *arr = make_arr(alloc, int);
+		arr_append(arr, 10);
+		arr_append(arr, 20);
+		arr_append(arr, 30);
+		
+		arr_set(arr, 0, 100);
+		arr_set(arr, 1, 200);
+		arr_set(arr, 2, 300);
+		
+		cr_assert_eq(arr_get(arr, 0), 100);
+		cr_assert_eq(arr_get(arr, 1), 200);
+		cr_assert_eq(arr_get(arr, 2), 300);
+	}
+}
+
+Test(dynamic_arrays, get_out_of_bounds, .exit_code = 1) {
+	with_borrow(alloc) {
+		int *arr = make_arr(alloc, int);
+		arr_append(arr, 10);
+		arr_append(arr, 20);
+		
+		(void)arr_get(arr, 2);
+	}
+}
+
+Test(dynamic_arrays, set_out_of_bounds, .exit_code = 1) {
+	with_borrow(alloc) {
+		int *arr = make_arr(alloc, int);
+		arr_append(arr, 10);
+		arr_append(arr, 20);
+		
+		arr_set(arr, 2, 999);
+	}
+}
+
+Test(dynamic_arrays, get_empty_array, .exit_code = 1) {
+	with_borrow(alloc) {
+		int *arr = make_arr(alloc, int);
+		(void)arr_get(arr, 0);
+	}
+}
+
+Test(dynamic_arrays, set_empty_array, .exit_code = 1) {
+	with_borrow(alloc) {
+		int *arr = make_arr(alloc, int);
+		arr_set(arr, 0, 42);
+	}
+}
+
+

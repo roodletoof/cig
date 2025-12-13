@@ -96,6 +96,21 @@ bool dyn_array_contains_cmp_func(void *this, uint8_t *value, dyn_array_eq_fn eq)
 	return false;
 }
 
+void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int line) {
+	size_t len = arr_len(this);
+	if (index >= len) {
+		fprintf(
+			stderr,
+			"%s:%d: array index %zu out of bounds (length is %zu)\n",
+			file,
+			line,
+			index,
+			len
+		);
+		exit(1);
+	}
+}
+
 void dyn_array_insert_sorted_func(void **this_ptr, const void *value, dyn_array_cmp_fn cmp, const char *file, int line) {
 	void *this = *this_ptr;
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
