@@ -57,14 +57,14 @@ static void *arena_resize(arena_allocator_t *this, void *old_ptr, size_t bytes) 
 		return NULL;
 	}
 
-	// sizeof not necessary but ill do it anyways.
-	size_t old_index = ((size_t)old_ptr - (size_t)this->data) / sizeof(*this->data);
-	size_t bytes_til_buffer_end = old_index + this->size;
-	size_t max_bytes_to_copy = bytes < bytes_til_buffer_end
-		? bytes
-		: bytes_til_buffer_end;
-	for (size_t i = old_index; i < old_index + max_bytes_to_copy; i++) {
-		new_ptr_b[i] = this->data[i];
+	// Calculate how many bytes from old_ptr to the end of currently used arena space
+	size_t old_offset = old_ptr_b - this->data;
+	size_t bytes_from_old_to_end = this->size - old_offset;
+	// Copy the smaller of: new allocation size or remaining old data
+	size_t bytes_to_copy = bytes < bytes_from_old_to_end ? bytes : bytes_from_old_to_end;
+	
+	for (size_t i = 0; i < bytes_to_copy; i++) {
+		new_ptr_b[i] = old_ptr_b[i];
 	}
 	return new_ptr_b;
 }
