@@ -203,8 +203,8 @@ bool dyn_array_contains_eq_func(void *this, uint8_t *value, dyn_array_eq_fn eq);
 
 #define arr_contains_cmp(THIS, EQ_FN, ...)\
 	(\
-		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(__VA_ARGS__))),\
-		dyn_array_contains_eq_func((THIS), (uint8_t*)(__VA_ARGS__), (EQ_FN))\
+		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(&__VA_ARGS__))),\
+		dyn_array_contains_eq_func((THIS), (uint8_t*)(&__VA_ARGS__), (EQ_FN))\
 	)
 
 // Comparison function for sorting: returns -1 if a < b, 0 if a == b, 1 if a > b

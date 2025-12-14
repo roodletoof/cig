@@ -57,12 +57,12 @@ Test(dynamic_arrays, contains) {
 	with_borrow(alloc) {
 		int *numbers = make_arr(int, alloc);
 		arr_append(numbers, 20);
-		cr_expect(arr_contains(numbers, &(int){20}));
+		cr_expect(arr_contains(numbers, (int){20}));
 		arr_reset(numbers);
 
 		for ( size_t y = 0; y < 1000; y++ ) {
 			for ( size_t i = 0; i < 100; i++ ) {
-				if (!arr_contains(numbers, &(int){i})) {
+				if (!arr_contains(numbers, (int){i})) {
 					arr_append(numbers, i);
 				}
 			}
@@ -80,9 +80,9 @@ Test(dynamic_arrays, contains_found) {
 		arr_append(arr, 20);
 		arr_append(arr, 30);
 		
-		cr_assert(arr_contains(arr, &(int){10}));
-		cr_assert(arr_contains(arr, &(int){20}));
-		cr_assert(arr_contains(arr, &(int){30}));
+		cr_assert(arr_contains(arr, (int){10}));
+		cr_assert(arr_contains(arr, (int){20}));
+		cr_assert(arr_contains(arr, (int){30}));
 	}
 }
 
@@ -93,9 +93,9 @@ Test(dynamic_arrays, contains_not_found) {
 		arr_append(arr, 20);
 		arr_append(arr, 30);
 		
-		cr_assert_not(arr_contains(arr, &(int){5}));
-		cr_assert_not(arr_contains(arr, &(int){15}));
-		cr_assert_not(arr_contains(arr, &(int){99}));
+		cr_assert_not(arr_contains(arr, (int){5}));
+		cr_assert_not(arr_contains(arr, (int){15}));
+		cr_assert_not(arr_contains(arr, (int){99}));
 	}
 }
 
@@ -103,7 +103,7 @@ Test(dynamic_arrays, contains_empty) {
 	with_borrow(alloc) {
 		int *arr = make_arr(int, alloc, .initial_capacity = 5);
 		
-		cr_assert_not(arr_contains(arr, &(int){10}));
+		cr_assert_not(arr_contains(arr, (int){10}));
 	}
 }
 
@@ -115,9 +115,9 @@ Test(dynamic_arrays, contains_cmp_found) {
 		arr_append(arr, 20);
 		arr_append(arr, 30);
 		
-		cr_assert(arr_contains_cmp(arr, int_eq, &(int){10}));
-		cr_assert(arr_contains_cmp(arr, int_eq, &(int){20}));
-		cr_assert(arr_contains_cmp(arr, int_eq, &(int){30}));
+		cr_assert(arr_contains_cmp(arr, int_eq, (int){10}));
+		cr_assert(arr_contains_cmp(arr, int_eq, (int){20}));
+		cr_assert(arr_contains_cmp(arr, int_eq, (int){30}));
 	}
 }
 
@@ -128,9 +128,9 @@ Test(dynamic_arrays, contains_cmp_not_found) {
 		arr_append(arr, 20);
 		arr_append(arr, 30);
 		
-		cr_assert_not(arr_contains_cmp(arr, int_eq, &(int){5}));
-		cr_assert_not(arr_contains_cmp(arr, int_eq, &(int){15}));
-		cr_assert_not(arr_contains_cmp(arr, int_eq, &(int){99}));
+		cr_assert_not(arr_contains_cmp(arr, int_eq, (int){5}));
+		cr_assert_not(arr_contains_cmp(arr, int_eq, (int){15}));
+		cr_assert_not(arr_contains_cmp(arr, int_eq, (int){99}));
 	}
 }
 
@@ -138,7 +138,7 @@ Test(dynamic_arrays, contains_cmp_empty) {
 	with_borrow(alloc) {
 		int *arr = make_arr(int, alloc, .initial_capacity = 5);
 		
-		cr_assert_not(arr_contains_cmp(arr, int_eq, &(int){10}));
+		cr_assert_not(arr_contains_cmp(arr, int_eq, (int){10}));
 	}
 }
 
@@ -164,13 +164,13 @@ Test(dynamic_arrays, contains_cmp_key_value_map) {
 		arr_append(map, ((kv_pair_t){.key = 10, .value = "ten"}));
 		
 		// Check if keys exist
-		cr_assert(arr_contains_cmp(map, kv_eq_by_key, &(kv_pair_t){.key = 1}));
-		cr_assert(arr_contains_cmp(map, kv_eq_by_key, &(kv_pair_t){.key = 5}));
-		cr_assert(arr_contains_cmp(map, kv_eq_by_key, &(kv_pair_t){.key = 10}));
+		cr_assert(arr_contains_cmp(map, kv_eq_by_key, (kv_pair_t){.key = 1}));
+		cr_assert(arr_contains_cmp(map, kv_eq_by_key, (kv_pair_t){.key = 5}));
+		cr_assert(arr_contains_cmp(map, kv_eq_by_key, (kv_pair_t){.key = 10}));
 		
 		// Check for non-existent keys
-		cr_assert_not(arr_contains_cmp(map, kv_eq_by_key, &(kv_pair_t){.key = 2}));
-		cr_assert_not(arr_contains_cmp(map, kv_eq_by_key, &(kv_pair_t){.key = 99}));
+		cr_assert_not(arr_contains_cmp(map, kv_eq_by_key, (kv_pair_t){.key = 2}));
+		cr_assert_not(arr_contains_cmp(map, kv_eq_by_key, (kv_pair_t){.key = 99}));
 	}
 }
 
