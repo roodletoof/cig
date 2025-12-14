@@ -84,25 +84,6 @@ allocator_t allocator_from_borrow(borrow_allocator_t *this);
 
 // arena allocator /////////////////////////////////////////////////////////////
 
-// Arena allocator - provides fast bump-pointer allocation with reset
-// capability.
-//
-// IMPORTANT: Arena allocators CANNOT be used as backing allocators for other
-// arenas. When an arena is reset and has overflow allocations
-// (bytes_outside_data), it calls allocator_reset() on its backing allocator.
-// This would reset the backing arena and corrupt/destroy any data it contains,
-// including other nested arenas.
-//
-// Use cases:
-//   - Fast per-frame or per-phase allocations that can be reset together
-//   - Temporary scratch space for computations
-//   - Building data structures that have similar lifetimes
-//
-// Backing allocator recommendations:
-//   - Use borrow_allocator as backing for testing/debugging
-//   - Use forever_allocator as backing for if the lifetime of the allocated
-//   items is the entire program duration.
-//   - DO NOT use another arena_allocator as backing
 typedef struct arena_allocator {
 	allocator_t allocator;
 	size_t size;
@@ -119,6 +100,37 @@ typedef struct arena_allocator {
 })
 
 allocator_t allocator_from_arena(arena_allocator_t *this);
+
+// Arena allocator - provides fast bump-pointer allocation with reset
+// capability.
+//
+// IMPORTANT: Arena allocators CANNOT be used as backing allocators for other
+// arenas. When an arena is reset and has overflow allocations
+// (bytes_outside_data), it calls allocator_reset() on its backing allocator.
+// This would reset the backing arena and corrupt/destroy any data it contains,
+// including other nested arenas.
+// Call reset before use, this allocates as many bytes as set in the initial
+// capacity.
+//
+// Example:
+// with_borrow(backing) {
+//     allocator_t arena = arena_allocator_create(backing, 4 * MB);
+//     while (!WindowShouldClose) {
+//         allocator_reset(arena);
+//         // rest of update loop goes here
+//     }
+// }
+//
+// Use cases:
+//   - Fast per-frame or per-phase allocations that can be reset together
+//   - Temporary scratch space for computations
+//   - Building data structures that have similar lifetimes
+//
+// Backing allocator recommendations:
+//   - Use borrow_allocator as backing for testing/debugging
+//   - Use forever_allocator as backing for if the lifetime of the allocated
+//   items is the entire program duration.
+//   - DO NOT use another arena_allocator as backing
 #define arena_allocator_create(BACKING_ALLOCATOR, INITIAL_CAPACITY) \
 	allocator_from_arena(&arena_allocator_value(BACKING_ALLOCATOR, INITIAL_CAPACITY))
 
