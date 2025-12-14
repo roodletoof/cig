@@ -186,7 +186,7 @@ Test(arena_allocator, dyn_array_resize_pattern) {
 		allocator_t arena = arena_allocator_create(backing, 10 * KB);
 		allocator_reset(arena);
 		
-		int *arr = make_arr(arena, int);
+		int *arr = make_arr(int, arena);
 		
 		// Add 100 elements, forcing multiple resizes
 		for (int i = 0; i < 100; i++) {
@@ -207,8 +207,8 @@ Test(arena_allocator, multiple_arrays_resize) {
 		allocator_t arena = arena_allocator_create(backing, 20 * KB);
 		allocator_reset(arena);
 		
-		int *arr1 = make_arr(arena, int);
-		int *arr2 = make_arr(arena, int);
+		int *arr1 = make_arr(int, arena);
+		int *arr2 = make_arr(int, arena);
 		
 		// Add to arr1
 		for (int i = 0; i < 50; i++) {
@@ -267,11 +267,11 @@ Test(arena_allocator, nested_structures_with_resize) {
 		allocator_reset(arena);
 		
 		// Create array of int pointers (like dyn_array of dyn_arrays)
-		int **rows = make_arr(arena, int*);
+		int **rows = make_arr(int*, arena);
 		
 		// Add 5 rows
 		for (int i = 0; i < 5; i++) {
-			int *row = make_arr(arena, int);
+			int *row = make_arr(int, arena);
 			for (int j = 0; j < 10; j++) {
 				arr_append(row, i * 10 + j);
 			}

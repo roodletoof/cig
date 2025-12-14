@@ -1,5 +1,5 @@
 
-CC := gcc
+CC := zig cc
 CFLAGS := -pedantic -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline
 LDFLAGS := -lcriterion
 

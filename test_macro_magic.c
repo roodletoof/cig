@@ -14,6 +14,7 @@ typedef struct args {
 #define ARGS_DEFAULT .animal=cat, .is_true=true
 #define ARGS(...) ((args_t){ ARGS_DEFAULT, __VA_ARGS__ })
 
+// NOTE: this is actually an extension, not really supported by the C standard.
 Test(macro_magic, default_values) {
 	args_t a1 = ARGS();
 	args_t a2 = ARGS(.animal=dog);

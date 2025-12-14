@@ -96,52 +96,20 @@ bool dyn_array_contains_cmp_func(void *this, uint8_t *value, dyn_array_eq_fn eq)
 	return false;
 }
 
-void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int line) {
+void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int line, bool print_error) {
 	size_t len = arr_len(this);
-	if (index >= len) {
-		fprintf(
-			stderr,
-			"%s:%d: array index %zu out of bounds (length is %zu)\n",
-			file,
-			line,
-			index,
-			len
-		);
+	if ((index >= len)) {
+		if (print_error) {
+			fprintf(
+				stderr,
+				"%s:%d: array index %zu out of bounds (length is %zu)\n",
+				file,
+				line,
+				index,
+				len
+			);
+		}
 		exit(1);
 	}
 }
 
-void dyn_array_insert_sorted_func(void **this_ptr, const void *value, dyn_array_cmp_fn cmp, const char *file, int line) {
-	void *this = *this_ptr;
-	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-	
-	// First append the value
-	this = dyn_array_grow_func(this, 1, file, line);
-	*this_ptr = this;
-	header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-	
-	size_t itemsize = header->itemsize;
-	size_t n_items = header->n_items;
-	
-	// Copy value to the end
-	memcpy(&header->bytes[(n_items - 1) * itemsize], value, itemsize);
-	
-	// Bubble it into the correct position from the back
-	size_t pos = n_items - 1;
-	while (pos > 0) {
-		void *a = &header->bytes[(pos - 1) * itemsize];
-		void *b = &header->bytes[pos * itemsize];
-		
-		if (cmp(a, b) <= 0) {
-			break; // Already in correct position
-		}
-		
-		// Swap using a temporary buffer
-		uint8_t temp[itemsize];
-		memcpy(temp, a, itemsize);
-		memcpy(a, b, itemsize);
-		memcpy(b, temp, itemsize);
-		
-		pos--;
-	}
-}

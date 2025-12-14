@@ -11,7 +11,7 @@ static void test_buffer_alloc(buffer_allocator_t impl) {
 	for (int i = 0; i < n_ints; i++) {
 		cr_assert_eq(ints[i], i);
 	}
-	cr_assert_eq(impl.size, sizeof(int)*n_ints);
+	cr_assert_eq(impl.size, sizeof(int)*n_ints, "%zu != %d", impl.size, n_ints);
 	ints = allocator_alloc(inter, sizeof(int) * n_ints);
 	for (int i = 0; i < n_ints; i++) {
 		ints[i] = i;

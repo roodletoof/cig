@@ -13,8 +13,7 @@ typedef union any_align { char c; int i; long l; long long ll; float f; double d
 #define KB (1024)
 #define MB (KB * KB)
 #define GB (KB * KB * KB)
-#define OFFSET(STRUCT, FIELD) ((size_t) (&((STRUCT*) NULL)->FIELD))
-#define PTR_FROM_FIELD_PTR(STRUCT, FIELD, PTR) ((STRUCT *) (((char *) PTR) - OFFSET(STRUCT, FIELD)))
+#define PTR_FROM_FIELD_PTR(STRUCT, FIELD, PTR) ((STRUCT *) (((char *) PTR) - offsetof(STRUCT, FIELD)))
 
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.
@@ -144,12 +143,11 @@ typedef struct dyn_array_create_func_args {
 } dyn_array_create_func_args_t;
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
 
-#define make_arr(ALLOCATOR, TYPE, ...) ((TYPE *)dyn_array_create_func((dyn_array_create_func_args_t){ \
-	.allocator = ALLOCATOR, \
+#define make_arr(TYPE, ...) ((TYPE *)dyn_array_create_func((dyn_array_create_func_args_t){ \
 	.itemsize = sizeof(TYPE), \
 	.file = __FILE__, \
 	.line = __LINE__, \
-	__VA_ARGS__ \
+	.allocator = __VA_ARGS__, \
 }))
 
 // Always reassign the array. if multiple variables reference the same growing
@@ -180,13 +178,13 @@ size_t arr_cap(void *this);
 
 #define arr_pop(THIS) (arr_shrink(THIS, 1), THIS[arr_len(THIS)])
 
-void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int line);
+void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int line, bool print_error);
 
 #define arr_get(THIS, INDEX) \
-	(dyn_array_bounds_check_func(THIS, INDEX, __FILE__, __LINE__), (THIS)[INDEX])
+	(dyn_array_bounds_check_func(THIS, INDEX, __FILE__, __LINE__, true), (THIS)[INDEX])
 
 #define arr_set(THIS, INDEX, VALUE) \
-	(dyn_array_bounds_check_func(THIS, INDEX, __FILE__, __LINE__), (THIS)[INDEX] = (VALUE))
+	(dyn_array_bounds_check_func(THIS, INDEX, __FILE__, __LINE__, true), (THIS)[INDEX] = (VALUE))
 
 #define STATIC_ASSERT(expr) ((void)sizeof(char[(expr) ? 1 : -1]))
 
@@ -211,13 +209,6 @@ bool dyn_array_contains_cmp_func(void *this, uint8_t *value, dyn_array_eq_fn eq)
 
 // Comparison function for sorting: returns -1 if a < b, 0 if a == b, 1 if a > b
 typedef int (*dyn_array_cmp_fn)(const void *a, const void *b);
-
-void dyn_array_insert_sorted_func(void **this_ptr, const void *value, dyn_array_cmp_fn cmp, const char *file, int line);
-
-#define arr_insert_sorted(THIS, VALUE, CMP_FN) do { \
-	typeof((THIS)[0]) _tmp_value = (VALUE); \
-	dyn_array_insert_sorted_func((void**)&(THIS), &_tmp_value, (CMP_FN), __FILE__, __LINE__); \
-} while(0)
 
 // CLI /////////////////////////////////////////////////////////////////////////
 
