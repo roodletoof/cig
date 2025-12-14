@@ -4,7 +4,7 @@
 #include <string.h>
 
 static void cli_print_indentation(args_t args) {
-	for ( size_t i = 0; i < args.indentation; i++ ) {
+	for ( int i = 0; i < args.indentation; i++ ) {
 		printf("\t");
 	}
 }
