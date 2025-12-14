@@ -192,8 +192,8 @@ bool dyn_array_contains_func(void *this, uint8_t *value);
 
 #define arr_contains(THIS, ...)\
 	(\
-		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(__VA_ARGS__))),\
-		dyn_array_contains_func((THIS), (uint8_t*)(__VA_ARGS__))\
+		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(&__VA_ARGS__))),\
+		dyn_array_contains_func((THIS), (uint8_t*)(&__VA_ARGS__))\
 	)
 
 // Comparison function: returns true if a equals b, false otherwise
