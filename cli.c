@@ -3,14 +3,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-bool cli_command(args_t *args, const char *command_name) {
-	if (args->count == 0) {
-		return false;
+static void cli_print_indentation(args_t args) {
+	for ( size_t i = 0; i < args.indentation; i++ ) {
+		printf("\t");
 	}
+}
+
+bool cli_command(args_t *args, const char *command_name) {
+	if (args->help) {
+		cli_print_indentation(*args);
+		printf("[ cmd ] %s\n", command_name);
+	}
+	if (args->count == 0) { return false; }
 	if (strcmp(args->values[0], command_name) == 0) {
 		args->values++;
 		args->count--;
+		args->indentation++;
 		return true;
+
 	}
 	return false;
 }
@@ -25,6 +35,13 @@ bool cli_bool(args_t args, const char *flag_name) {
 }
 
 bool cli_opt_str_func(args_t args, const char *flag_name, const char **output, const char *file, int line) {
+	if (args.help) {
+		cli_print_indentation(args);
+		printf("[ opt ] %s\n", flag_name);
+		*output = "";
+		return false;
+	}
+	
 	bool is_flag_name_found = false;
 	int flag_name_index;
 	for ( int i = 0; i < args.count; i++ ) {
@@ -49,6 +66,12 @@ bool cli_opt_str_func(args_t args, const char *flag_name, const char **output, c
 }
 
 const char *cli_req_str_func(args_t args, const char *flag_name, const char *file, int line) {
+	if (args.help) {
+		cli_print_indentation(args);
+		printf("[ req ] %s\n", flag_name);
+		return "";
+	}
+	
 	const char *value;
 	if (cli_opt_str_func(args, flag_name, &value, file, line)) {
 		return value;
@@ -60,6 +83,13 @@ const char *cli_req_str_func(args_t args, const char *flag_name, const char *fil
 }
 
 bool cli_opt_int_func(args_t args, const char *flag_name, int *output, const char *file, int line) {
+	if (args.help) {
+		cli_print_indentation(args);
+		printf("[ opt ] %s\n", flag_name);
+		*output = 0;
+		return false;
+	}
+	
 	const char *text = "";
 	if (cli_opt_str_func(args, flag_name, &text, file, line)) {
 		if (
@@ -91,6 +121,12 @@ bool cli_opt_int_func(args_t args, const char *flag_name, int *output, const cha
 }
 
 int cli_req_int_func(args_t args, const char *flag_name, const char *file, int line) {
+	if (args.help) {
+		cli_print_indentation(args);
+		printf("[ req ] %s\n", flag_name);
+		return 0;
+	}
+	
 	int value;
 	if (cli_opt_int_func(args, flag_name, &value, file, line)) {
 		return value;
@@ -102,9 +138,13 @@ int cli_req_int_func(args_t args, const char *flag_name, const char *file, int l
 }
 
 args_t cli_make_args(int argc, const char **argv) {
-	return (args_t) {
+	args_t args = (args_t) {
 		.count = argc-1,
 		.values = argv+1,
+		.help = false,
+		.indentation = 0,
 	};
+	args.help = cli_bool(args, "--help") || cli_bool(args, "-h");
+	return args;
 }
 

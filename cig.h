@@ -219,11 +219,13 @@ void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 typedef struct args {
 	int count;
 	const char **values;
+	bool help;
+	int indentation;
 } args_t;
 
-args_t cli_make_args(int argc, const char **argv); // no crash
-bool cli_command(args_t *args, const char *command_name); // no crash
-bool cli_bool(args_t args, const char *flag_name); // no crash
+args_t cli_make_args(int argc, const char **argv);
+bool cli_command(args_t *args, const char *command_name);
+bool cli_bool(args_t args, const char *flag_name);
 bool cli_opt_str_func(args_t args, const char *flag_name, const char **output, const char *file, int line);
 const char *cli_req_str_func(args_t args, const char *flag_name, const char *file, int line);
 bool cli_opt_int_func(args_t args, const char *flag_name, int *output, const char *file, int line);
