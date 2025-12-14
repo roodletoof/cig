@@ -7,20 +7,13 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  test:
     runs-on: ubuntu-latest
-
+    name: Build and Test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Zig
-        uses: https://codeberg.org/mlugg/setup-zig@v2
-
-      - name: Install dependencies
-        run: |
+      - uses: actions/checkout@v3
+      - uses: https://codeberg.org/mlugg/setup-zig@v2
+      - run: |
           sudo apt-get update
           sudo apt-get install -y gcc make libcriterion-dev valgrind
-
-      - name: Build and run tests
-        run: make test
+      - run: make test
