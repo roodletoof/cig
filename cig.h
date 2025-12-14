@@ -199,16 +199,17 @@ bool dyn_array_contains_func(void *this, uint8_t *value);
 // Comparison function: returns true if a equals b, false otherwise
 typedef bool (*dyn_array_eq_fn)(const void *a, const void *b);
 
-bool dyn_array_contains_cmp_func(void *this, uint8_t *value, dyn_array_eq_fn eq);
+bool dyn_array_contains_eq_func(void *this, uint8_t *value, dyn_array_eq_fn eq);
 
 #define arr_contains_cmp(THIS, EQ_FN, ...)\
 	(\
 		STATIC_ASSERT(sizeof(*(THIS)) == sizeof(*(__VA_ARGS__))),\
-		dyn_array_contains_cmp_func((THIS), (uint8_t*)(__VA_ARGS__), (EQ_FN))\
+		dyn_array_contains_eq_func((THIS), (uint8_t*)(__VA_ARGS__), (EQ_FN))\
 	)
 
 // Comparison function for sorting: returns -1 if a < b, 0 if a == b, 1 if a > b
 typedef int (*dyn_array_cmp_fn)(const void *a, const void *b);
+void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 
 // CLI /////////////////////////////////////////////////////////////////////////
 

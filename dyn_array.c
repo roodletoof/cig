@@ -1,5 +1,6 @@
 #include "cig.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 void *dyn_array_create_func(dyn_array_create_func_args_t args) {
 	dyn_array_header_t *header = allocator_alloc_func(
@@ -83,7 +84,7 @@ bool dyn_array_contains_func(void *this, uint8_t *value) {
 	return false;
 }
 
-bool dyn_array_contains_cmp_func(void *this, uint8_t *value, dyn_array_eq_fn eq) {
+bool dyn_array_contains_eq_func(void *this, uint8_t *value, dyn_array_eq_fn eq) {
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
 	size_t itemsize = header->itemsize;
 	
@@ -113,3 +114,7 @@ void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int
 	}
 }
 
+void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn) {
+	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
+	qsort(this, header->n_items, header->itemsize, cmp_fn);
+}
