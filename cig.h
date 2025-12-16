@@ -96,7 +96,7 @@ typedef struct arena_allocator {
 	.allocator=BACKING_ALLOCATOR, \
 	.size=0, \
 	.capacity=INITIAL_CAPACITY, \
-	.data=NULL \
+	.data=allocator_alloc(BACKING_ALLOCATOR, INITIAL_CAPACITY) \
 })
 
 allocator_t allocator_from_arena(arena_allocator_t *this);
