@@ -1,5 +1,4 @@
 #include <criterion/criterion.h>
-#include <criterion/internal/assert.h>
 #include <string.h>
 #include "cig.h"
 

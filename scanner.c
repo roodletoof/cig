@@ -332,3 +332,21 @@ bool scanner_print_errors(scanner_t *s, FILE *fp) {
 	}
 	return s->errors != NULL;
 }
+
+bool looks_like_float(scanner_t *s) {
+	const char *cur = s->cur;
+	if (*cur == '+' || *cur == '-') cur++;
+	if (!isdigit((unsigned char)*(cur++))) return false;
+	while (isdigit((unsigned char)*(cur++)));
+	if (*cur != '.') return false;
+	cur++;
+	return isdigit((unsigned char)*cur);
+}
+
+bool looks_like_int(scanner_t *s) {
+	const char *cur = s->cur;
+	if (*cur == '+' || *cur == '-') {
+		cur++;
+	}
+	return isdigit(*cur);
+}

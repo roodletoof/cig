@@ -324,6 +324,8 @@ bool scan_f32(scanner_t *s);
 bool scan_identifier(scanner_t *s);
 bool scan_string_literal(scanner_t *s);
 bool scanner_print_errors(scanner_t *s, FILE *fp);
+bool looks_like_float(scanner_t *s);
+bool looks_like_int(scanner_t *s);
 
 // string builder //////////////////////////////////////////////////////////////
 typedef struct string_builder_node {
