@@ -21,7 +21,8 @@ Test(scanner, looks_like_float) {
 	with_borrow(allocator) {
 		scanner_t scanner = make_scanner("test", buffer, allocator);
 		while (!scan_eof(&scanner)) {
-			bool actual = looks_like_float(&scanner);
+			bool does_look_like_float = looks_like_float(&scanner);
+			bool does_look_like_int = looks_like_float(&scanner);
 			while (*scanner.cur++ != ' ');
 			bool expect;
 			if (scan_literal(&scanner, "true")) {
@@ -32,8 +33,10 @@ Test(scanner, looks_like_float) {
 				assert(false && "invalid expectation");
 			}
 			scan_whitespace(&scanner);
-			cr_assert_eq(actual, expect);
-
+			cr_assert_eq(does_look_like_float, expect);
+			if (does_look_like_float) {
+				cr_assert(does_look_like_int);
+			}
 		}
 	}
 
