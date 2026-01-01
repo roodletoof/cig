@@ -359,6 +359,44 @@ void sb_fprint_and_clear(string_builder_t *this, FILE *dest);
 char *read_entire_file(const char *path, allocator_t allocator);
 char **read_all_file_lines(const char *path, allocator_t allocator);
 
+// easing //////////////////////////////////////////////////////////////////////
+
+float ease_in_quad(float t);
+float ease_out_quad(float t);
+float ease_inout_quad(float t);
+
+float ease_in_cubic(float t);
+float ease_out_cubic(float t);
+float ease_inout_cubic(float t);
+
+float ease_in_quart(float t);
+float ease_out_quart(float t);
+float ease_inout_quart(float t);
+
+float ease_in_quint(float t);
+float ease_out_quint(float t);
+float ease_inout_quint(float t);
+
+float ease_in_expo(float t);
+float ease_out_expo(float t);
+float ease_inout_expo(float t);
+
+float ease_in_circ(float t);
+float ease_out_circ(float t);
+float ease_inout_circ(float t);
+
+float ease_in_back(float t);
+float ease_out_back(float t);
+float ease_inout_back(float t);
+
+float ease_in_elastic(float t);
+float ease_out_elastic(float t);
+float ease_inout_elastic(float t);
+
+float ease_in_bounce(float t);
+float ease_out_bounce(float t);
+float ease_inout_bounce(float t);
+
 #ifdef CIG_IMPL
 
 void *allocator_alloc_func(allocator_t this, size_t bytes, const char *file, int line) {
