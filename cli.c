@@ -26,6 +26,11 @@ bool cli_command(args_t *args, const char *command_name) {
 }
 
 bool cli_bool(args_t args, const char *flag_name) {
+	if (args.help) {
+		cli_print_indentation(args);
+		printf("[ flg ] %s\n", flag_name);
+		return false;
+	}
 	for ( int i = 0; i < args.count; i++ ) {
 		if (strcmp(args.values[i], flag_name) == 0) {
 			return true;
