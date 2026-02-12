@@ -130,7 +130,7 @@ allocator_t allocator_from_arena(arena_allocator_t *this);
 //   - Use borrow_allocator as backing for testing/debugging
 //   - Use forever_allocator as backing for if the lifetime of the allocated
 //   items is the entire program duration.
-//   - DO NOT use another arena_allocator as backing
+//   - do not use another arena_allocator as backing
 #define arena_allocator_create(BACKING_ALLOCATOR, INITIAL_CAPACITY) \
 	allocator_from_arena(&arena_allocator_value(BACKING_ALLOCATOR, INITIAL_CAPACITY))
 
