@@ -223,6 +223,41 @@ bool dyn_array_contains_eq_func(void *this, uint8_t *value, dyn_array_eq_fn eq);
 typedef int (*dyn_array_cmp_fn)(const void *a, const void *b);
 void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 
+// hashmaps ////////////////////////////////////////////////////////////////////
+
+typedef int (*hash_func_t)(void *key);
+typedef int (*equals_func_t)(void *key1, void *key2);
+
+typedef struct hashmap_header {
+	size_t n_items, capacity, itemsize, keysize;
+	allocator_t allocator;
+	hash_func_t hash_func;
+	equals_func_t equals_func;
+	union {
+		uint8_t bytes[1];
+		any_align_t _[1];
+	};
+	// TODO: after this comes the actual hash map. it maps keys to indexes into
+	// the key-value pair array. (which does not actually need values, only a
+	// key field.)
+} hashmap_header_t;
+
+typedef struct hashmap_create_func_args {
+	allocator_t allocator;
+	size_t itemsize;
+	size_t initial_capacity;
+	const char *file;
+	hash_func_t hash_func;
+	equals_func_t equals_func;
+	int keysize;
+	int line;
+} hashmap_create_func_args_t;
+void *hashmap_create_func(hashmap_create_func_args_t args);
+
+#define make_map()
+
+// TODO this shite
+
 // CLI /////////////////////////////////////////////////////////////////////////
 
 #define CLI_UNIQUE1 __macro_internal_34bba35b8b9b20a75f9881e3795630e25d36e620d9c9741e2e9141ba82ec6ef7__
