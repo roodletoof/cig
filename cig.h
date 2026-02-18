@@ -254,6 +254,12 @@ typedef struct hashmap_create_func_args {
 } hashmap_create_func_args_t;
 void *hashmap_create_func(hashmap_create_func_args_t args);
 
+// TODO: use sizeof on a declared variable in this and arrays. e.g.
+// char *charlist;
+// init_arr(charlist, allocator, .initial_capacity=10);
+// so I can do:
+// struct {int key; int val;} *my_map;
+// init_map(my_map, allocator, .initial_capacity=10);
 #define make_map()
 
 // TODO this shite
