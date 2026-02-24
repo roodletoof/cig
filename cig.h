@@ -162,6 +162,15 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args);
 	.allocator = __VA_ARGS__, \
 }))
 
+#define init_arr(PTR, ...) do { \
+	PTR = dyn_array_create_func((dyn_array_create_func_args_t){ \
+		.itemsize = sizeof(*PTR), \
+		.file = __FILE__, \
+		.line = __LINE__, \
+		.allocator = __VA_ARGS__, \
+	}); \
+} while(0);
+
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
 void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int line);
@@ -228,39 +237,50 @@ void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 typedef int (*hash_func_t)(void *key);
 typedef int (*equals_func_t)(void *key1, void *key2);
 
+// TODO: after this comes the actual hash map. it maps keys to indexes into the
+// key-value pair array. (which does not actually need values, only a key
+// field.)
+// TODO: This means that when allocating memory for the array of key-value
+// pairs, we actually need to allocate it in terms of the max_align type, and
+// increase in size by using that size as the smallest increment. Which will
+// keep the hash array aligned properly in memory.
+
 typedef struct hashmap_header {
-	size_t n_items, capacity, itemsize, keysize;
+	int n_items, capacity, itemsize, keysize;
 	allocator_t allocator;
-	hash_func_t hash_func;
-	equals_func_t equals_func;
+	hash_func_t hash;
+	equals_func_t equals;
 	union {
 		uint8_t bytes[1];
 		any_align_t _[1];
 	};
-	// TODO: after this comes the actual hash map. it maps keys to indexes into
-	// the key-value pair array. (which does not actually need values, only a
-	// key field.)
+	// The above union is actually a different size. Then comes an array of
+	// integers which is double the size of n_items * sizeof(int). int
+	// indexes[...];
 } hashmap_header_t;
 
 typedef struct hashmap_create_func_args {
 	allocator_t allocator;
-	size_t itemsize;
-	size_t initial_capacity;
 	const char *file;
-	hash_func_t hash_func;
-	equals_func_t equals_func;
+	hash_func_t hash; // OPTIONAL
+	equals_func_t equals; // OPTIONAL
+	int initial_capacity; // OPTIONAL
+	int itemsize;
 	int keysize;
 	int line;
 } hashmap_create_func_args_t;
+
 void *hashmap_create_func(hashmap_create_func_args_t args);
 
-// TODO: use sizeof on a declared variable in this and arrays. e.g.
-// char *charlist;
-// init_arr(charlist, allocator, .initial_capacity=10);
-// so I can do:
-// struct {int key; int val;} *my_map;
-// init_map(my_map, allocator, .initial_capacity=10);
-#define make_map()
+#define init_map(PTR, ...) do { \
+	PTR = hashmap_create_func((hashmap_create_func_args_t) { \
+		.itemsize=sizeof(*PTR), \
+		.keysize=sizeof(PTR->key), \
+		.file=__FILE__, \
+		.line=__LINE__, \
+		.allocator=__VA_ARGS__ \
+	}); \
+} while(0);
 
 // TODO this shite
 
