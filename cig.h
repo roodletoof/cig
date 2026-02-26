@@ -9,7 +9,7 @@
 #include <string.h>
 
 typedef union any_align { char c; int i; long l; long long ll; float f; double d; void *p; long double ld; } any_align_t;
-#define ALIGN_OF(TYPE) ((size_t)(&((struct{char c; TYPE t;}*) 0)->t))
+#define ALIGN_OF(TYPE) ((size_t)(&((struct{char c; TYPE t;}*) 256)->t) - 256)
 #define MAX_ALIGN (ALIGN_OF(any_align_t))
 #define KB (1024)
 #define MB (KB * KB)
