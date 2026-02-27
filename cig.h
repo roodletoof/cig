@@ -233,12 +233,12 @@ bool dyn_array_contains_eq_func(void *this, uint8_t *value, dyn_array_eq_fn eq);
 typedef int (*dyn_array_cmp_fn)(const void *a, const void *b);
 void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 
-// hashmaps ////////////////////////////////////////////////////////////////////
+// maps ////////////////////////////////////////////////////////////////////
 
 typedef int (*hash_func_t)(void *key);
 typedef int (*equals_func_t)(void *key1, void *key2);
 
-typedef struct hashmap_header {
+typedef struct map_header {
 	int n_items, capacity, itemsize, keysize, mapping_capacity;
 	allocator_t allocator;
 	hash_func_t hash;
@@ -248,9 +248,9 @@ typedef struct hashmap_header {
 		uint8_t bytes[1];
 		any_align_t _[1];
 	};
-} hashmap_header_t;
+} map_header_t;
 
-typedef struct hashmap_create_func_args {
+typedef struct map_create_func_args {
 	allocator_t allocator;
 	const char *file;
 	hash_func_t hash; // OPTIONAL
@@ -259,12 +259,12 @@ typedef struct hashmap_create_func_args {
 	int itemsize;
 	int keysize;
 	int line;
-} hashmap_create_func_args_t;
+} map_create_func_args_t;
 
-void *hashmap_create_func(hashmap_create_func_args_t args);
+void *map_create_func(map_create_func_args_t args);
 
 #define init_map(PTR, ...) do { \
-	PTR = hashmap_create_func((hashmap_create_func_args_t) { \
+	PTR = map_create_func((map_create_func_args_t) { \
 		.itemsize=sizeof(*PTR), \
 		.keysize=sizeof(PTR->key), \
 		.file=__FILE__, \
@@ -272,6 +272,9 @@ void *hashmap_create_func(hashmap_create_func_args_t args);
 		.allocator=__VA_ARGS__ \
 	}); \
 } while(0);
+
+int map_len(void *this);
+int map_cap(void *this);
 
 // CLI /////////////////////////////////////////////////////////////////////////
 
@@ -478,6 +481,7 @@ void allocator_reset(allocator_t this) {
 #include "scanner.c"
 #include "string_builder.c"
 #include "file_io.c"
+#include "map.c"
 
 #endif // CIG_IMPL
 

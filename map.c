@@ -4,8 +4,8 @@ static inline int mapping_cap(int capacity) {
 	return capacity * 2;
 }
 
-void *hashmap_create_func(
-	hashmap_create_func_args_t args
+void *map_create_func(
+	map_create_func_args_t args
 ) {
 
 	const size_t cap_of_index_arr =
@@ -14,9 +14,9 @@ void *hashmap_create_func(
 	const size_t SIZE = args.itemsize * args.initial_capacity;
 	const size_t cap_of_items_arr = (SIZE + INC - 1) / INC;
 	const size_t bytes =
-			sizeof(hashmap_header_t) + cap_of_items_arr + cap_of_index_arr;
+		sizeof(map_header_t) + cap_of_items_arr + cap_of_index_arr;
 
-	hashmap_header_t *header =
+	map_header_t *header =
 		allocator_alloc_func(
 			args.allocator,
 			bytes,
@@ -39,4 +39,23 @@ void *hashmap_create_func(
 	}
 
 	return header->bytes;
+}
+
+void map_grow(void *this) {
+}
+
+int map_len(void *this) {
+	if (this == NULL) {
+		return 0;
+	}
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	return header->n_items;
+}
+
+int map_cap(void *this) {
+	if (this == NULL) {
+		return 0;
+	}
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	return header->capacity;
 }
