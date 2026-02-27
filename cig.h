@@ -238,26 +238,16 @@ void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 typedef int (*hash_func_t)(void *key);
 typedef int (*equals_func_t)(void *key1, void *key2);
 
-// TODO: after this comes the actual hash map. it maps keys to indexes into the
-// key-value pair array. (which does not actually need values, only a key
-// field.)
-// TODO: This means that when allocating memory for the array of key-value
-// pairs, we actually need to allocate it in terms of the max_align type, and
-// increase in size by using that size as the smallest increment. Which will
-// keep the hash array aligned properly in memory.
-
 typedef struct hashmap_header {
-	int n_items, capacity, itemsize, keysize;
+	int n_items, capacity, itemsize, keysize, mapping_capacity;
 	allocator_t allocator;
 	hash_func_t hash;
 	equals_func_t equals;
+	int *mapping_arr;
 	union {
 		uint8_t bytes[1];
 		any_align_t _[1];
 	};
-	// The above union is actually a different size. Then comes an array of
-	// integers which is double the size of n_items * sizeof(int). int
-	// indexes[...];
 } hashmap_header_t;
 
 typedef struct hashmap_create_func_args {
@@ -282,8 +272,6 @@ void *hashmap_create_func(hashmap_create_func_args_t args);
 		.allocator=__VA_ARGS__ \
 	}); \
 } while(0);
-
-// TODO this shite
 
 // CLI /////////////////////////////////////////////////////////////////////////
 
