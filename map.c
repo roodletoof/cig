@@ -59,10 +59,19 @@ void *map_create_func(
 void *map_grow_func(void *this, const char *file, int line) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	allocator_t allocator = header->allocator;
-	const int new_size = 0; // TODO!!!
-	header = allocator_resize_func(allocator, header, new_size, file, line);
-	// TODO!!!
-	assert(false && "TODO");
+	int new_capacity = 1;
+	if (header->capacity > 0) {
+		new_capacity = header->capacity * 2;
+	}
+	internal_map_sizes_t new_size = internal_map_sizes(
+		new_capacity,
+		header->itemsize
+	);
+	header = allocator_resize_func(allocator, header, new_size.bytes, file, line);
+        // TODO!!! Overwrite the mapping arr with -1, then iterate through the
+        // items arr and find the hashes of the values to populate the mappings
+        // arr.
+        assert(false && "TODO");
 
 	return header->bytes;
 }
