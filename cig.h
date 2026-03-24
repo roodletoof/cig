@@ -353,32 +353,39 @@ typedef struct scanner {
 	allocator_t allocator;
 } scanner_t;
 
+// TODO: replace implementations to use this. also put the value here. make separate error message type and make union with the value.
+typedef struct scanner_result {
+	bool ok;
+	const char *filename;
+	int line;
+	int column;
+	const char *not_ok_message;
+} scanner_result_t;
+
 scanner_t make_scanner(const char *name, const char *buffer, allocator_t allocator);
 void scanner_recover(scanner_t *s);
 void scanner_error(scanner_t *s, const char *message);
 void scanner_error_and_recover(scanner_t *s, const char *message);
-bool scan_eof(scanner_t *s);
-bool scan_literal(scanner_t *s, const char *lit);
+scanner_result_t scan_eof(scanner_t *s);
+scanner_result_t scan_literal(scanner_t *s, const char *lit);
 int scan_repeat_literal(scanner_t *s, const char *lit);
-bool scan_whitespace(scanner_t *s);
-bool scan_digit(scanner_t *s);
-bool scan_i64(scanner_t *s);
-bool scan_i32(scanner_t *s);
-bool scan_i16(scanner_t *s);
-bool scan_i8(scanner_t *s);
-bool scan_u64(scanner_t *s);
-bool scan_u32(scanner_t *s);
-bool scan_u16(scanner_t *s);
-bool scan_u8(scanner_t *s);
-bool scan_f64(scanner_t *s);
-bool scan_f32(scanner_t *s);
+scanner_result_t scan_whitespace(scanner_t *s);
+scanner_result_t scan_digit(scanner_t *s);
+scanner_result_t scan_i64(scanner_t *s);
+scanner_result_t scan_i32(scanner_t *s);
+scanner_result_t scan_i16(scanner_t *s);
+scanner_result_t scan_i8(scanner_t *s);
+scanner_result_t scan_u64(scanner_t *s);
+scanner_result_t scan_u32(scanner_t *s);
+scanner_result_t scan_u16(scanner_t *s);
+scanner_result_t scan_u8(scanner_t *s);
+scanner_result_t scan_f64(scanner_t *s);
+scanner_result_t scan_f32(scanner_t *s);
 // Scan as much of an identifier as possible, you are responsible to scan for
 // valid characters after the identifier is scanned.
-bool scan_identifier(scanner_t *s);
-bool scan_string_literal(scanner_t *s);
+scanner_result_t scan_identifier(scanner_t *s);
+scanner_result_t scan_string_literal(scanner_t *s);
 bool scanner_print_errors(scanner_t *s, FILE *fp);
-bool looks_like_float(scanner_t *s);
-bool looks_like_int(scanner_t *s);
 
 // string builder //////////////////////////////////////////////////////////////
 typedef struct string_builder_node {
