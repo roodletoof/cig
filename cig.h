@@ -321,12 +321,7 @@ int cli_req_int_func(args_t args, const char *flag_name, const char *file, int l
 	) \
 	if (CLI_UNIQUE1)
 
-// scanner /////////////////////////////////////////////////////////////////////
-
-typedef struct error_node {
-	char *msg;
-	struct error_node *next;
-} error_node_t;
+// scan /////////////////////////////////////////////////////////////////////
 
 typedef union scan_value {
 	int digit;
@@ -344,48 +339,50 @@ typedef union scan_value {
 	char *string_literal;
 } scan_value_t;
 
-typedef struct scanner {
+typedef struct scan {
 	const char *name; // name of the buffer
 	const char *start; // pointer to the full buffer
 	const char *cur; // current pointer
-	scan_value_t value;
-	error_node_t *errors; // singly linked list of error strings
 	allocator_t allocator;
-} scanner_t;
+} scan_t;
 
-// TODO: replace implementations to use this. also put the value here. make separate error message type and make union with the value.
-typedef struct scanner_result {
-	bool ok;
+typedef struct scan_error {
 	const char *filename;
 	int line;
 	int column;
-	const char *not_ok_message;
-} scanner_result_t;
+	const char *error_message;
+} scan_error_t;
 
-scanner_t make_scanner(const char *name, const char *buffer, allocator_t allocator);
-void scanner_recover(scanner_t *s);
-void scanner_error(scanner_t *s, const char *message);
-void scanner_error_and_recover(scanner_t *s, const char *message);
-scanner_result_t scan_eof(scanner_t *s);
-scanner_result_t scan_literal(scanner_t *s, const char *lit);
-int scan_repeat_literal(scanner_t *s, const char *lit);
-scanner_result_t scan_whitespace(scanner_t *s);
-scanner_result_t scan_digit(scanner_t *s);
-scanner_result_t scan_i64(scanner_t *s);
-scanner_result_t scan_i32(scanner_t *s);
-scanner_result_t scan_i16(scanner_t *s);
-scanner_result_t scan_i8(scanner_t *s);
-scanner_result_t scan_u64(scanner_t *s);
-scanner_result_t scan_u32(scanner_t *s);
-scanner_result_t scan_u16(scanner_t *s);
-scanner_result_t scan_u8(scanner_t *s);
-scanner_result_t scan_f64(scanner_t *s);
-scanner_result_t scan_f32(scanner_t *s);
+typedef struct scan_result {
+	bool ok;
+	union {
+		scan_error_t error;
+		scan_value_t value;
+	};
+} scan_result_t;
+
+scan_t make_scan(const char *name, const char *buffer, allocator_t allocator);
+void scan_next_line(scan_t *s);
+scan_result_t scan_eof(scan_t *s);
+scan_result_t scan_literal(scan_t *s, const char *lit);
+int scan_repeat_literal(scan_t *s, const char *lit);
+scan_result_t scan_whitespace(scan_t *s);
+scan_result_t scan_digit(scan_t *s);
+scan_result_t scan_i64(scan_t *s);
+scan_result_t scan_i32(scan_t *s);
+scan_result_t scan_i16(scan_t *s);
+scan_result_t scan_i8(scan_t *s);
+scan_result_t scan_u64(scan_t *s);
+scan_result_t scan_u32(scan_t *s);
+scan_result_t scan_u16(scan_t *s);
+scan_result_t scan_u8(scan_t *s);
+scan_result_t scan_f64(scan_t *s);
+scan_result_t scan_f32(scan_t *s);
 // Scan as much of an identifier as possible, you are responsible to scan for
 // valid characters after the identifier is scanned.
-scanner_result_t scan_identifier(scanner_t *s);
-scanner_result_t scan_string_literal(scanner_t *s);
-bool scanner_print_errors(scanner_t *s, FILE *fp);
+scan_result_t scan_identifier(scan_t *s);
+scan_result_t scan_string_literal(scan_t *s);
+scan_value_t required(scan_result_t res);
 
 // string builder //////////////////////////////////////////////////////////////
 typedef struct string_builder_node {

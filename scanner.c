@@ -4,19 +4,17 @@
 #include <string.h>
 #include <errno.h>
 
-scanner_t make_scanner(const char *name, const char *buffer, allocator_t allocator) {
-	scanner_t s = {
+scan_t make_scan(const char *name, const char *buffer, allocator_t allocator) {
+	scan_t s = {
 		.name = name,
 		.start = buffer,
 		.cur = buffer,
-		.value = {0},
-		.errors = NULL,
 		.allocator = allocator
 	};
 	return s;
 }
 
-void scanner_recover(scanner_t *s) {
+void scan_next_line(scan_t *s) {
 	while (*s->cur && *s->cur != '\n') {
 		s->cur++;
 	}
@@ -24,46 +22,11 @@ void scanner_recover(scanner_t *s) {
 		s->cur++;  // move *past* the newline
 }
 
-void scanner_error(scanner_t *s, const char *message) {
-	const char *error_pos = s->cur; // use current scanner position
-	// Compute line + column (1-based)
-	int line = 1, col = 1;
-	for (const char *p = s->start; p < error_pos; p++) {
-		if (*p == '\n') { line++; col = 1; }
-		else col++;
-	}
-	// need 40 bytes for pair of largest possible 64 bit values, then some for
-	// ':' and ' ' characters. Just rounded up to 64 because reasons.
-	size_t length = strlen(s->name) + 1 + strlen(message) + 1 + 64;
-	char *buf = allocator_alloc(s->allocator, length);
-	snprintf(
-		buf,
-		length,
-		"%s:%d:%d: %s",
-		s->name, line, col, message
-	);
-	error_node_t *node = allocator_alloc(s->allocator, sizeof(error_node_t));
-	node->msg = buf;
-	node->next = NULL;
-	if (!s->errors) {
-		s->errors = node;
-	} else {
-		error_node_t *p = s->errors;
-		while (p->next) p = p->next;
-		p->next = node;
-	}
-}
-
-void scanner_error_and_recover(scanner_t *s, const char *message) {
-	scanner_error(s, message);
-	scanner_recover(s);
-}
-
-bool scan_eof(scanner_t *s) {
+scan_result_t scan_eof(scan_t *s) {
 	return *s->cur == '\0';
 }
 
-bool scan_literal(scanner_t *s, const char *lit) {
+bool scan_literal(scan_t *s, const char *lit) {
 	const char *save = s->cur;
 	while (*lit && *lit == *s->cur) {
 		lit++;
@@ -76,7 +39,7 @@ bool scan_literal(scanner_t *s, const char *lit) {
 	return false;
 }
 
-int scan_repeat_literal(scanner_t *s, const char *lit) {
+int scan_repeat_literal(scan_t *s, const char *lit) {
 	int n_repeats = 0;
 	while (scan_literal(s, lit)) {
 		n_repeats++;
@@ -84,13 +47,13 @@ int scan_repeat_literal(scanner_t *s, const char *lit) {
 	return n_repeats;
 }
 
-bool scan_whitespace(scanner_t *s) {
+bool scan_whitespace(scan_t *s) {
 	const char *save = s->cur;
 	while (isspace((unsigned char)*s->cur)) s->cur++;
 	return save != s->cur;
 }
 
-bool scan_digit(scanner_t *s) {
+bool scan_digit(scan_t *s) {
 	if (!isdigit((unsigned char)*s->cur)) {
 		return false;
 	}
@@ -99,7 +62,7 @@ bool scan_digit(scanner_t *s) {
 	return true;
 }
 
-bool scan_i64(scanner_t *s) {
+bool scan_i64(scan_t *s) {
 	const char *save = s->cur;
 	if (*s->cur == '-' || *s->cur == '+') s->cur++;
 	if (!isdigit((unsigned char)*s->cur)) {
@@ -115,7 +78,7 @@ bool scan_i64(scanner_t *s) {
 		return false;
 	}
 	if (errno == ERANGE) {
-		scanner_error(s, "integer does not fit in i64 value");
+		scan_error(s, "integer does not fit in i64 value");
 		return false;
 	}
 	s->cur = end;
@@ -123,52 +86,52 @@ bool scan_i64(scanner_t *s) {
 	return true;
 }
 
-bool scan_i32(scanner_t *s) {
+bool scan_i32(scan_t *s) {
 	if (!scan_i64(s)) {
 		return false;
 	}
 	int32_t val = (int32_t)s->value.i64;
 	int64_t back = (int64_t)val;
 	if (back != s->value.i64) {
-		scanner_error(s, "int does not fit in i32 value");
+		scan_error(s, "int does not fit in i32 value");
 		return false;
 	}
 	s->value.i32 = val;
 	return true;
 }
 
-bool scan_i16(scanner_t *s) {
+bool scan_i16(scan_t *s) {
 	if (!scan_i64(s)) {
 		return false;
 	}
 	int16_t val = (int16_t)s->value.i64;
 	int64_t back = (int64_t)val;
 	if (back != s->value.i64) {
-		scanner_error(s, "int does not fit in i16 value");
+		scan_error(s, "int does not fit in i16 value");
 		return false;
 	}
 	s->value.i16 = val;
 	return true;
 }
 
-bool scan_i8(scanner_t *s) {
+bool scan_i8(scan_t *s) {
 	if (!scan_i64(s)) {
 		return false;
 	}
 	int8_t val = (int8_t)s->value.i64;
 	int64_t back = (int64_t)val;
 	if (back != s->value.i64) {
-		scanner_error(s, "int does not fit in i8 value");
+		scan_error(s, "int does not fit in i8 value");
 		return false;
 	}
 	s->value.i8 = val;
 	return true;
 }
 
-bool scan_u64(scanner_t *s) {
+bool scan_u64(scan_t *s) {
 	const char *save = s->cur;
 	if (*s->cur == '-') {
-		scanner_error(s, "- is not allowed for unsigned integers");
+		scan_error(s, "- is not allowed for unsigned integers");
 		return false;
 	}
 	if (*s->cur == '+') s->cur++;
@@ -185,7 +148,7 @@ bool scan_u64(scanner_t *s) {
 		return false;
 	}
 	if (errno == ERANGE) {
-		scanner_error(s, "integer does not fit in u64 value");
+		scan_error(s, "integer does not fit in u64 value");
 		return false;
 	}
 	s->cur = end;
@@ -193,49 +156,49 @@ bool scan_u64(scanner_t *s) {
 	return true;
 }
 
-bool scan_u32(scanner_t *s) {
+bool scan_u32(scan_t *s) {
 	if (!scan_u64(s)) {
 		return false;
 	}
 	uint32_t val = (uint32_t)s->value.u64;
 	uint64_t back = (uint64_t)val;
 	if (back != s->value.u64) {
-		scanner_error(s, "int does not fit in u32 value");
+		scan_error(s, "int does not fit in u32 value");
 		return false;
 	}
 	s->value.u32 = val;
 	return true;
 }
 
-bool scan_u16(scanner_t *s) {
+bool scan_u16(scan_t *s) {
 	if (!scan_u64(s)) {
 		return false;
 	}
 	uint16_t val = (uint16_t)s->value.u64;
 	uint64_t back = (uint64_t)val;
 	if (back != s->value.u64) {
-		scanner_error(s, "int does not fit in u16 value");
+		scan_error(s, "int does not fit in u16 value");
 		return false;
 	}
 	s->value.u16 = val;
 	return true;
 }
 
-bool scan_u8(scanner_t *s) {
+bool scan_u8(scan_t *s) {
 	if (!scan_u64(s)) {
 		return false;
 	}
 	uint8_t val = (uint8_t)s->value.u64;
 	uint64_t back = (uint64_t)val;
 	if (back != s->value.u64) {
-		scanner_error(s, "int does not fit in u8 value");
+		scan_error(s, "int does not fit in u8 value");
 		return false;
 	}
 	s->value.u8 = val;
 	return true;
 }
 
-bool scan_f64(scanner_t *s) {
+bool scan_f64(scan_t *s) {
 	const char *save = s->cur;
 	char *end;
 	errno = 0;
@@ -245,7 +208,7 @@ bool scan_f64(scanner_t *s) {
 		return false;
 	}
 	if (errno == ERANGE) {
-		scanner_error(s, "float does not fit in f64 value");
+		scan_error(s, "float does not fit in f64 value");
 		return false;
 	}
 	s->cur = end;
@@ -253,21 +216,21 @@ bool scan_f64(scanner_t *s) {
 	return true;
 }
 
-bool scan_f32(scanner_t *s) {
+bool scan_f32(scan_t *s) {
 	if (!scan_f64(s)) {
 		return false;
 	}
 	float val = (float)s->value.f64;
 	double back = (double)val;
 	if (back != s->value.f64) {
-		scanner_error(s, "float does not fit in f32 value");
+		scan_error(s, "float does not fit in f32 value");
 		return false;
 	}
 	s->value.f32 = val;
 	return true;
 }
 
-bool scan_identifier(scanner_t *s) {
+bool scan_identifier(scan_t *s) {
 	if (!isalpha((unsigned char)*s->cur) && *s->cur != '_') {
 		return false;
 	}
@@ -284,7 +247,7 @@ bool scan_identifier(scanner_t *s) {
 }
 
 
-bool scan_string_literal(scanner_t *s) {
+bool scan_string_literal(scan_t *s) {
 	const char *save = s->cur;
 	if (*s->cur != '"')
 		return false;
@@ -304,7 +267,7 @@ bool scan_string_literal(scanner_t *s) {
 				case '"': c = '"'; break;
 				case '0': c = '\0'; break;
 				default:
-					scanner_error(s, "invalid escape sequence");
+					scan_error(s, "invalid escape sequence");
 					s->cur = save;
 					return false;
 			}
@@ -316,7 +279,7 @@ bool scan_string_literal(scanner_t *s) {
 		buf[len++] = c;
 	}
 	if (*s->cur != '"') {
-		scanner_error(s, "unterminated string literal");
+		scan_error(s, "unterminated string literal");
 		s->cur = save;
 		return false;
 	}
@@ -326,41 +289,18 @@ bool scan_string_literal(scanner_t *s) {
 	return true;
 }
 
-bool scanner_print_errors(scanner_t *s, FILE *fp) {
-	for (error_node_t *node = s->errors; node != NULL; node = node->next) {
-		fprintf(fp, "%s\n", node->msg);
+scan_value_t required(scan_result_t res) {
+	if (!res.ok) {
+		fprintf(stderr, "%s:%d:%d: %s", res.filename, res.line, res.column, res.error_message);
+		exit(1);
 	}
-	return s->errors != NULL;
+	return res.value;
+	// TODO
 }
 
-bool looks_like_float(scanner_t *s) {
-	const char *cur = s->cur;
-	if (
-		((*cur) == '+') ||
-		((*cur) == '-')
-	) {
-		cur++;
-	}
-	if (!isdigit(((unsigned char)*cur))) {
-		return false;
-	} else {
-		cur++;
-	}
-	while (isdigit(((unsigned char)*cur))) {
-		cur++;
-	}
-	if ((*cur) != '.') {
-		return false;
-	} else {
-		cur++;
-	}
-	return isdigit(((unsigned char)*cur));
-}
-
-bool looks_like_int(scanner_t *s) {
-	const char *cur = s->cur;
-	if (*cur == '+' || *cur == '-') {
-		cur++;
-	}
-	return isdigit(*cur);
-}
+typedef struct scan_error {
+	const char *filename;
+	int line;
+	int column;
+	const char *error_message;
+} scan_error_t;
