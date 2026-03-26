@@ -22,6 +22,8 @@ void scan_next_line(scan_t *s) {
 		s->cur++;  // move *past* the newline
 }
 
+// TODO: probably do not need an allocator for a scanner?
+
 scan_error_t scan_error(const scan_t *s, const char *message) {
 	const char *error_pos = s->cur; // use current scanner position
 	// Compute line + column (1-based)
@@ -38,9 +40,14 @@ scan_error_t scan_error(const scan_t *s, const char *message) {
 		.error_message = message
 	};
 
-	// TODO: probably do not need an allocator for a scanner?
 }
 
+scan_result_t scan_error_result(const scan_t *s, const char *message) {
+	return (scan_result_t) {
+		.ok=false,
+		.error=scan_error(s, message),
+	};
+}
 
 scan_result_t scan_eof(scan_t *s) {
 	return (scan_result_t) {
@@ -61,10 +68,7 @@ scan_result_t scan_literal(scan_t *s, const char *lit) {
 		};
 	}
 	s->cur = save;
-	return (scan_result_t) {
-		.ok=false,
-		.error=scan_error(s, "invalid literal"),
-	};
+	return scan_error_result(s, "invalid literal");
 	// TODO: add another optional string field to specify what literal is
 	// missing
 }
@@ -88,10 +92,7 @@ scan_result_t scan_whitespace(scan_t *s) {
 
 scan_result_t scan_digit(scan_t *s) {
 	if (!isdigit((unsigned char)*s->cur)) {
-		return (scan_result_t){
-			.ok=false,
-			.error=scan_error(s, "expected digit"),
-		};
+		return scan_error_result(s, "expected digit");
 	}
 	s->cur++;
 	return (scan_result_t){
@@ -102,12 +103,12 @@ scan_result_t scan_digit(scan_t *s) {
 	};
 }
 
-bool scan_i64(scan_t *s) {
+scan_result_t scan_i64(scan_t *s) {
 	const char *save = s->cur;
 	if (*s->cur == '-' || *s->cur == '+') s->cur++;
 	if (!isdigit((unsigned char)*s->cur)) {
 		s->cur = save;
-		return false;
+		return scan_error_result(s, "is not an integer");
 	}
 	s->cur = save;
 	char *end;
@@ -115,64 +116,78 @@ bool scan_i64(scan_t *s) {
 	int64_t val = strtoll(s->cur, &end, 10);
 	if (end == s->cur) {
 		s->cur = save;
-		return false;
+		return scan_error_result(s, "is not an integer");
 	}
 	if (errno == ERANGE) {
-		scan_error(s, "integer does not fit in i64 value");
-		return false;
+		return scan_error_result(s, "integer does not fit in i64 value");
 	}
 	s->cur = end;
-	s->value.i64 = val;
-	return true;
+	return (scan_result_t){
+		.ok=true,
+		.value=(scan_value_t){
+			.i64=val,
+		},
+	};
 }
 
-bool scan_i32(scan_t *s) {
-	if (!scan_i64(s)) {
-		return false;
+scan_result_t scan_i32(scan_t *s) {
+	scan_result_t result_i64 = scan_i64(s);
+	if (!result_i64.ok) {
+		return result_i64;
 	}
-	int32_t val = (int32_t)s->value.i64;
+	int32_t val = (int32_t)result_i64.value.i64;
 	int64_t back = (int64_t)val;
-	if (back != s->value.i64) {
-		scan_error(s, "int does not fit in i32 value");
-		return false;
+	if (back != result_i64.value.i64) {
+		return scan_error_result(s, "integer does not fit in i32 value");
 	}
-	s->value.i32 = val;
-	return true;
+	return (scan_result_t) {
+		.ok=true,
+		.value=(scan_value_t){
+			.i32=val,
+		},
+	};
 }
 
-bool scan_i16(scan_t *s) {
-	if (!scan_i64(s)) {
-		return false;
+scan_result_t scan_i16(scan_t *s) {
+	scan_result_t result_i64 = scan_i64(s);
+	if (!result_i64.ok) {
+		return result_i64;
 	}
-	int16_t val = (int16_t)s->value.i64;
+	int16_t val = (int32_t)result_i64.value.i64;
 	int64_t back = (int64_t)val;
-	if (back != s->value.i64) {
-		scan_error(s, "int does not fit in i16 value");
-		return false;
+	if (back != result_i64.value.i64) {
+		return scan_error_result(s, "integer does not fit in i16 value");
 	}
-	s->value.i16 = val;
-	return true;
+	return (scan_result_t) {
+		.ok=true,
+		.value=(scan_value_t){
+			.i16=val,
+		},
+	};
 }
 
-bool scan_i8(scan_t *s) {
-	if (!scan_i64(s)) {
-		return false;
+scan_result_t scan_i8(scan_t *s) {
+	scan_result_t result_i64 = scan_i64(s);
+	if (!result_i64.ok) {
+		return result_i64;
 	}
-	int8_t val = (int8_t)s->value.i64;
+	int8_t val = (int32_t)result_i64.value.i64;
 	int64_t back = (int64_t)val;
-	if (back != s->value.i64) {
-		scan_error(s, "int does not fit in i8 value");
-		return false;
+	if (back != result_i64.value.i64) {
+		return scan_error_result(s, "integer does not fit in i8 value");
 	}
-	s->value.i8 = val;
-	return true;
+	return (scan_result_t) {
+		.ok=true,
+		.value=(scan_value_t){
+			.i8=val,
+		},
+	};
 }
 
-bool scan_u64(scan_t *s) {
+scan_result_t scan_u64(scan_t *s) {
 	const char *save = s->cur;
 	if (*s->cur == '-') {
-		scan_error(s, "- is not allowed for unsigned integers");
-		return false;
+		return scan_error_result(s, "- is not allowed for unsigned integers");
 	}
 	if (*s->cur == '+') s->cur++;
 	if (!isdigit((unsigned char)*s->cur)) {
