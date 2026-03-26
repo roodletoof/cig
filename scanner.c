@@ -23,7 +23,13 @@ void scan_next_line(scan_t *s) {
 }
 
 scan_result_t scan_eof(scan_t *s) {
-	return *s->cur == '\0';
+	return (scan_result_t) {
+		.ok=*s->cur == '\0',
+		.error=(scan_error_t){
+		// TODO: make reusable error value maker. kind of what we had earlier, but with no allocation
+			
+		},
+	}
 }
 
 bool scan_literal(scan_t *s, const char *lit) {
