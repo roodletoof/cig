@@ -22,50 +22,84 @@ void scan_next_line(scan_t *s) {
 		s->cur++;  // move *past* the newline
 }
 
+scan_error_t scan_error(const scan_t *s, const char *message) {
+	const char *error_pos = s->cur; // use current scanner position
+	// Compute line + column (1-based)
+	int line = 1, col = 1;
+	for (const char *p = s->start; p < error_pos; p++) {
+		if (*p == '\n') { line++; col = 1; }
+		else col++;
+	}
+
+	return (scan_error_t) {
+		.filename = s->name,
+		.line = line,
+		.column = col,
+		.error_message = message
+	};
+
+	// TODO: probably do not need an allocator for a scanner?
+}
+
+
 scan_result_t scan_eof(scan_t *s) {
 	return (scan_result_t) {
 		.ok=*s->cur == '\0',
-		.error=(scan_error_t){
-		// TODO: make reusable error value maker. kind of what we had earlier, but with no allocation
-			
-		},
-	}
+		.error=scan_error(s, "null character not found"),
+	};
 }
 
-bool scan_literal(scan_t *s, const char *lit) {
+scan_result_t scan_literal(scan_t *s, const char *lit) {
 	const char *save = s->cur;
 	while (*lit && *lit == *s->cur) {
 		lit++;
 		s->cur++;
 	}
 	if (*lit == '\0') {
-		return true;
+		return (scan_result_t) {
+			.ok=true,
+		};
 	}
 	s->cur = save;
-	return false;
+	return (scan_result_t) {
+		.ok=false,
+		.error=scan_error(s, "invalid literal"),
+	};
+	// TODO: add another optional string field to specify what literal is
+	// missing
 }
 
 int scan_repeat_literal(scan_t *s, const char *lit) {
 	int n_repeats = 0;
-	while (scan_literal(s, lit)) {
+	while (scan_literal(s, lit).ok) {
 		n_repeats++;
 	}
 	return n_repeats;
 }
 
-bool scan_whitespace(scan_t *s) {
+scan_result_t scan_whitespace(scan_t *s) {
 	const char *save = s->cur;
 	while (isspace((unsigned char)*s->cur)) s->cur++;
-	return save != s->cur;
+	return (scan_result_t) {
+		.ok=save != s->cur,
+		.error=scan_error(s, "expected whitespace"),
+	};
 }
 
-bool scan_digit(scan_t *s) {
+scan_result_t scan_digit(scan_t *s) {
 	if (!isdigit((unsigned char)*s->cur)) {
-		return false;
+		return (scan_result_t){
+			.ok=false,
+			.error=scan_error(s, "expected digit"),
+		};
 	}
-	s->value.digit = (*s->cur) - '0';
 	s->cur++;
-	return true;
+	return (scan_result_t){
+		.ok=true,
+		.value=(scan_value_t){
+			.digit=(*s->cur) - '0',
+		},
+	};
 }
 
 bool scan_i64(scan_t *s) {
