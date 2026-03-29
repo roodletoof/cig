@@ -37,7 +37,7 @@ scan_error_t scan_error(const scan_t *s, const char *message) {
 		.filename = s->name,
 		.line = line,
 		.column = col,
-		.error_message = message
+		.message = message
 	};
 
 }
@@ -65,7 +65,7 @@ scan_result_t scan_literal(scan_t *s, const char *lit) {
 		s->cur++;
 	}
 	if (*lit == '\0') {
-		return scan_value_result();
+		return scan_value_result(0);
 	}
 	s->cur = save;
 	return scan_error_result(s, "invalid literal");
@@ -117,12 +117,7 @@ scan_result_t scan_i64(scan_t *s) {
 		return scan_error_result(s, "integer does not fit in i64 value");
 	}
 	s->cur = end;
-	return (scan_result_t){
-		.ok=true,
-		.value=(scan_value_t){
-			.i64=val,
-		},
-	};
+	return scan_value_result(.i64=val);
 }
 
 scan_result_t scan_i32(scan_t *s) {
@@ -135,12 +130,7 @@ scan_result_t scan_i32(scan_t *s) {
 	if (back != result_i64.value.i64) {
 		return scan_error_result(s, "integer does not fit in i32 value");
 	}
-	return (scan_result_t) {
-		.ok=true,
-		.value=(scan_value_t){
-			.i32=val,
-		},
-	};
+	return scan_value_result(.i32=val);
 }
 
 scan_result_t scan_i16(scan_t *s) {
@@ -153,12 +143,7 @@ scan_result_t scan_i16(scan_t *s) {
 	if (back != result_i64.value.i64) {
 		return scan_error_result(s, "integer does not fit in i16 value");
 	}
-	return (scan_result_t) {
-		.ok=true,
-		.value=(scan_value_t){
-			.i16=val,
-		},
-	};
+	return scan_value_result(.i16=val);
 }
 
 scan_result_t scan_i8(scan_t *s) {
@@ -171,12 +156,7 @@ scan_result_t scan_i8(scan_t *s) {
 	if (back != result_i64.value.i64) {
 		return scan_error_result(s, "integer does not fit in i8 value");
 	}
-	return (scan_result_t) {
-		.ok=true,
-		.value=(scan_value_t){
-			.i8=val,
-		},
-	};
+	return scan_value_result(.i8=val);
 }
 
 scan_result_t scan_u64(scan_t *s) {
@@ -201,12 +181,7 @@ scan_result_t scan_u64(scan_t *s) {
 		return scan_error_result(s, "integer does not fit in i64 value");
 	}
 	s->cur = end;
-	return (scan_result_t){
-		.ok=true,
-		.value=(scan_value_t){
-			.u64=val,
-		},
-	};
+	return scan_value_result(.u64=val);
 }
 
 scan_result_t scan_u32(scan_t *s) {
@@ -219,12 +194,7 @@ scan_result_t scan_u32(scan_t *s) {
 	if (back != result_u64.value.u64) {
 		return scan_error_result(s, "integer does not fit in u32 values");
 	}
-	return (scan_result_t) {
-		.ok=true,
-		.value=(scan_value_t){
-			.u32=val,
-		},
-	};
+	return scan_value_result(.u32=val);
 }
 
 scan_result_t scan_u16(scan_t *s) {
@@ -237,12 +207,7 @@ scan_result_t scan_u16(scan_t *s) {
 	if (back != result_u64.value.u64) {
 		return scan_error_result(s, "integer does not fit in u16 value");
 	}
-	return (scan_result_t) {
-		.ok=true,
-		.value=(scan_value_t){
-			.u16=val,
-		},
-	};
+	return scan_value_result(.u16=val);
 }
 
 scan_result_t scan_u8(scan_t *s) {
@@ -255,12 +220,7 @@ scan_result_t scan_u8(scan_t *s) {
 	if (back != result_u64.value.u64) {
 		return scan_error_result(s, "integer does not fit in u8 value");
 	}
-	return (scan_result_t) {
-		.ok=true,
-		.value=(scan_value_t){
-			.u8=val,
-		},
-	};
+	return scan_value_result(.u8=val);
 }
 
 scan_result_t scan_f64(scan_t *s) {
@@ -276,49 +236,45 @@ scan_result_t scan_f64(scan_t *s) {
 		return scan_error_result(s, "float does not fit in f64 value");
 	}
 	s->cur = end;
-	return (scan_result_t) {
-		.ok=true,
-		.value=(scan_value_t){
-			.f64=val,
-		},
-	};
+	return scan_value_result(.f64=val);
 }
 
-bool scan_f32(scan_t *s) {
-	if (!scan_f64(s)) {
-		return false;
+scan_result_t scan_f32(scan_t *s) {
+	scan_result_t result_f64 = scan_f64(s);
+	if (!result_f64.ok) {
+		return result_f64;
 	}
-	float val = (float)s->value.f64;
+	float val = (float)result_f64.value.f64;
 	double back = (double)val;
-	if (back != s->value.f64) {
-		scan_error(s, "float does not fit in f32 value");
-		return false;
+	if (back != result_f64.value.f64) {
+		return scan_error_result(s, "float does not fit in f32 value");
 	}
-	s->value.f32 = val;
-	return true;
+	return scan_value_result(.f32=val);
 }
 
-bool scan_identifier(scan_t *s) {
+scan_result_t scan_identifier(scan_t *s) {
 	if (!isalpha((unsigned char)*s->cur) && *s->cur != '_') {
-		return false;
+		return scan_error_result(s, "not an identifier");
 	}
 	const char *start = s->cur++;
 	while (isalnum((unsigned char)*s->cur) || *s->cur == '_') {
 		s->cur++;
 	}
+	// TODO: use arraylists just to standardize?
 	size_t len = s->cur - start;
 	char *buf = allocator_alloc(s->allocator, len + 1);
 	memcpy(buf, start, len);
 	buf[len] = '\0';
-	s->value.identifier = buf;
-	return true;
+	return scan_value_result(.identifier=buf);
 }
 
 
-bool scan_string_literal(scan_t *s) {
+scan_result_t scan_string_literal(scan_t *s) {
+	// TODO: use arraylists just to standardize?
 	const char *save = s->cur;
-	if (*s->cur != '"')
-		return false;
+	if (*s->cur != '"') {
+		return scan_error_result(s, "missing opening quote");
+	}
 	s->cur++; // skip opening quote
 	char *buf = allocator_alloc(s->allocator, 256);
 	size_t cap = 256;
@@ -335,9 +291,8 @@ bool scan_string_literal(scan_t *s) {
 				case '"': c = '"'; break;
 				case '0': c = '\0'; break;
 				default:
-					scan_error(s, "invalid escape sequence");
 					s->cur = save;
-					return false;
+					return scan_error_result(s, "invalid excape sequence");
 			}
 		}
 		if (len + 2 >= cap) {
@@ -347,28 +302,18 @@ bool scan_string_literal(scan_t *s) {
 		buf[len++] = c;
 	}
 	if (*s->cur != '"') {
-		scan_error(s, "unterminated string literal");
 		s->cur = save;
-		return false;
+		return scan_error_result(s, "unterminated string literal");
 	}
 	s->cur++; // skip closing quote
 	buf[len] = '\0';
-	s->value.string_literal = buf;
-	return true;
+	return scan_value_result(.string_literal=buf);
 }
 
 scan_value_t required(scan_result_t res) {
 	if (!res.ok) {
-		fprintf(stderr, "%s:%d:%d: %s", res.filename, res.line, res.column, res.error_message);
+		fprintf(stderr, "%s:%d:%d: %s", res.error.filename, res.error.line, res.error.column, res.error.message);
 		exit(1);
 	}
 	return res.value;
-	// TODO
 }
-
-typedef struct scan_error {
-	const char *filename;
-	int line;
-	int column;
-	const char *error_message;
-} scan_error_t;

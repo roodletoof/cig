@@ -263,7 +263,9 @@ typedef struct map_create_func_args {
 
 void *map_create_func(map_create_func_args_t args);
 
+// key should be the first item in the key-value struct.
 #define init_map(PTR, ...) do { \
+	STATIC_ASSERT(((size_t)PTR) == ((size_t)(&PTR->key))); \
 	PTR = map_create_func((map_create_func_args_t) { \
 		.itemsize=sizeof(*PTR), \
 		.keysize=sizeof(PTR->key), \
@@ -350,7 +352,7 @@ typedef struct scan_error {
 	const char *filename;
 	int line;
 	int column;
-	const char *error_message;
+	const char *message;
 } scan_error_t;
 
 typedef struct scan_result {
