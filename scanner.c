@@ -42,6 +42,8 @@ scan_error_t scan_error(const scan_t *s, const char *message) {
 
 }
 
+#define scan_value_result(VAL) ((scan_result_t){.ok=true, .value=(scan_value_t){VAL}})
+
 scan_result_t scan_error_result(const scan_t *s, const char *message) {
 	return (scan_result_t) {
 		.ok=false,
@@ -63,9 +65,7 @@ scan_result_t scan_literal(scan_t *s, const char *lit) {
 		s->cur++;
 	}
 	if (*lit == '\0') {
-		return (scan_result_t) {
-			.ok=true,
-		};
+		return scan_value_result();
 	}
 	s->cur = save;
 	return scan_error_result(s, "invalid literal");
@@ -95,12 +95,7 @@ scan_result_t scan_digit(scan_t *s) {
 		return scan_error_result(s, "expected digit");
 	}
 	s->cur++;
-	return (scan_result_t){
-		.ok=true,
-		.value=(scan_value_t){
-			.digit=(*s->cur) - '0',
-		},
-	};
+	return scan_value_result(.digit=(*s->cur) - '0');
 }
 
 scan_result_t scan_i64(scan_t *s) {
@@ -153,7 +148,7 @@ scan_result_t scan_i16(scan_t *s) {
 	if (!result_i64.ok) {
 		return result_i64;
 	}
-	int16_t val = (int32_t)result_i64.value.i64;
+	int16_t val = (int16_t)result_i64.value.i64;
 	int64_t back = (int64_t)val;
 	if (back != result_i64.value.i64) {
 		return scan_error_result(s, "integer does not fit in i16 value");
@@ -171,7 +166,7 @@ scan_result_t scan_i8(scan_t *s) {
 	if (!result_i64.ok) {
 		return result_i64;
 	}
-	int8_t val = (int32_t)result_i64.value.i64;
+	int8_t val = (int8_t)result_i64.value.i64;
 	int64_t back = (int64_t)val;
 	if (back != result_i64.value.i64) {
 		return scan_error_result(s, "integer does not fit in i8 value");
@@ -192,7 +187,7 @@ scan_result_t scan_u64(scan_t *s) {
 	if (*s->cur == '+') s->cur++;
 	if (!isdigit((unsigned char)*s->cur)) {
 		s->cur = save;
-		return false;
+		return scan_error_result(s, "not an integer");
 	}
 	s->cur = save;
 	char *end;
@@ -200,75 +195,93 @@ scan_result_t scan_u64(scan_t *s) {
 	uint64_t val = strtoull(s->cur, &end, 10);
 	if (end == s->cur) {
 		s->cur = save;
-		return false;
+		return scan_error_result(s, "not an integer");
 	}
 	if (errno == ERANGE) {
-		scan_error(s, "integer does not fit in u64 value");
-		return false;
+		return scan_error_result(s, "integer does not fit in i64 value");
 	}
 	s->cur = end;
-	s->value.u64 = val;
-	return true;
+	return (scan_result_t){
+		.ok=true,
+		.value=(scan_value_t){
+			.u64=val,
+		},
+	};
 }
 
-bool scan_u32(scan_t *s) {
-	if (!scan_u64(s)) {
-		return false;
+scan_result_t scan_u32(scan_t *s) {
+	scan_result_t result_u64 = scan_u64(s);
+	if (!result_u64.ok) {
+		return result_u64;
 	}
-	uint32_t val = (uint32_t)s->value.u64;
+	uint32_t val = (uint32_t)result_u64.value.u64;
 	uint64_t back = (uint64_t)val;
-	if (back != s->value.u64) {
-		scan_error(s, "int does not fit in u32 value");
-		return false;
+	if (back != result_u64.value.u64) {
+		return scan_error_result(s, "integer does not fit in u32 values");
 	}
-	s->value.u32 = val;
-	return true;
+	return (scan_result_t) {
+		.ok=true,
+		.value=(scan_value_t){
+			.u32=val,
+		},
+	};
 }
 
-bool scan_u16(scan_t *s) {
-	if (!scan_u64(s)) {
-		return false;
+scan_result_t scan_u16(scan_t *s) {
+	scan_result_t result_u64 = scan_u64(s);
+	if (!result_u64.ok) {
+		return result_u64;
 	}
-	uint16_t val = (uint16_t)s->value.u64;
+	uint16_t val = (uint16_t)result_u64.value.u64;
 	uint64_t back = (uint64_t)val;
-	if (back != s->value.u64) {
-		scan_error(s, "int does not fit in u16 value");
-		return false;
+	if (back != result_u64.value.u64) {
+		return scan_error_result(s, "integer does not fit in u16 value");
 	}
-	s->value.u16 = val;
-	return true;
+	return (scan_result_t) {
+		.ok=true,
+		.value=(scan_value_t){
+			.u16=val,
+		},
+	};
 }
 
-bool scan_u8(scan_t *s) {
-	if (!scan_u64(s)) {
-		return false;
+scan_result_t scan_u8(scan_t *s) {
+	scan_result_t result_u64 = scan_u64(s);
+	if (!result_u64.ok) {
+		return result_u64;
 	}
-	uint8_t val = (uint8_t)s->value.u64;
+	uint8_t val = (uint8_t)result_u64.value.u64;
 	uint64_t back = (uint64_t)val;
-	if (back != s->value.u64) {
-		scan_error(s, "int does not fit in u8 value");
-		return false;
+	if (back != result_u64.value.u64) {
+		return scan_error_result(s, "integer does not fit in u8 value");
 	}
-	s->value.u8 = val;
-	return true;
+	return (scan_result_t) {
+		.ok=true,
+		.value=(scan_value_t){
+			.u8=val,
+		},
+	};
 }
 
-bool scan_f64(scan_t *s) {
+scan_result_t scan_f64(scan_t *s) {
 	const char *save = s->cur;
 	char *end;
 	errno = 0;
 	double val = strtod(s->cur, &end);
 	if (end == s->cur) {
 		s->cur = save;
-		return false;
+		return scan_error_result(s, "not a float");
 	}
 	if (errno == ERANGE) {
-		scan_error(s, "float does not fit in f64 value");
-		return false;
+		return scan_error_result(s, "float does not fit in f64 value");
 	}
 	s->cur = end;
-	s->value.f64 = val;
-	return true;
+	return (scan_result_t) {
+		.ok=true,
+		.value=(scan_value_t){
+			.f64=val,
+		},
+	};
 }
 
 bool scan_f32(scan_t *s) {
