@@ -15,6 +15,10 @@ typedef union any_align { char c; int i; long l; long long ll; float f; double d
 #define MB (KB * KB)
 #define GB (KB * KB * KB)
 #define PTR_FROM_FIELD_PTR(STRUCT, FIELD, PTR) ((STRUCT *) (((char *) PTR) - offsetof(STRUCT, FIELD)))
+#define TODO(...) do { \
+	fprintf(stderr, "%s:%d: TODO: %s", __FILE__, (int)__LINE__, #__VA_ARGS__);\
+	exit(1); \
+} while (0)
 
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.

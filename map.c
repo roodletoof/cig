@@ -74,15 +74,30 @@ void *map_grow_func(void *this, const char *file, int line) {
 			header->itemsize
 		);
 		header = allocator_resize_func(allocator, header, new_size.bytes, file, line);
-			// TODO!!! Overwrite the mapping arr with -1, then iterate through the
-			// items arr and find the hashes of the values to populate the mappings
-			// arr.
-			assert(false && "TODO");
-		TODO 
+		
+		TODO(
+			Overwrite the mapping arr with -1, then iterate through the items
+			arr and find the hashes of the values to populate the mappings
+		);
 	}
 
 	header->n_items = new_size;
 	return header->bytes;
+}
+
+void map_shrink_func(void *this, const char *file, int line) {
+	if (map_len(this) <= 0) {
+		fprintf(
+			stderr,
+			"%s:%d: tried to shrink map of size 0.\n",
+			file,
+			line
+		);
+		exit(1);
+	}
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	header->n_items--;
+	TODO(Hash the key at the removed item to find it in the mapping array, and set it to the gravestone value.);
 }
 
 int map_len(void *this) {
