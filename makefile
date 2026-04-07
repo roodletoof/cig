@@ -30,9 +30,3 @@ CRITERION_HEADERS := $(shell find /usr/include/criterion)
 ALL_FILES := $(PROJECT_C_FILES) $(CRITERION_HEADERS)
 tags: $(ALL_FILES)
 	ctags -R $(ALL_FILES)
-
-scratch: /tmp/scratch
-	valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 /tmp/scratch
-
-/tmp/scratch: scratch.c
-	gcc scratch.c -o /tmp/scratch

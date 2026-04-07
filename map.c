@@ -75,10 +75,13 @@ void *map_grow_func(void *this, const char *file, int line) {
 		);
 		header = allocator_resize_func(allocator, header, new_size.bytes, file, line);
 		
-		TODO(
-			Overwrite the mapping arr with -1, then iterate through the items
-			arr and find the hashes of the values to populate the mappings
-		);
+		static_assert(0, "Overwrite the mapping arr with -1, then iterate"
+		"through the items arr and find the hashes of the values to populate the"
+		"mappings");
+			
+		static_assert(0, "make sure the mapping_arr field is set to the new and"
+		"correct pointer!");
+			
 	}
 
 	header->n_items = new_size;
@@ -97,7 +100,30 @@ void map_shrink_func(void *this, const char *file, int line) {
 	}
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	header->n_items--;
-	TODO(Hash the key at the removed item to find it in the mapping array, and set it to the gravestone value.);
+	static_assert(0, "Hash the key at the removed item to find it in the mapping array, and set it to the gravestone value.");
+}
+
+static inline uint32_t fnv_1a(const uint8_t *bytes, const int length) {
+	// Yanked from: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+	const uint32_t PRIME = 0x01000193;
+	const uint32_t OFFSET = 0x811c9dc5;
+	uint32_t hash = OFFSET;
+	for (int i = 0; i < length; i++) {
+		uint32_t byte = (uint32_t)bytes[i];
+		hash = hash ^ byte;
+		hash = hash * PRIME;
+	}
+	return hash;
+}
+
+unsigned int map_hash(void *this, void *value) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	if (header->hash) {
+		static_assert(0, "hash using the hasing function");
+		return;
+	}
+	static_assert(0, "WRONG!!!, this should hash the fucking value, not the god dammned entire hashmap of values");
+	return (int) fnv_1a(header->bytes, header->n_items*header->itemsize) % header->mapping_capacity;
 }
 
 int map_len(void *this) {
