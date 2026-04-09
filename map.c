@@ -119,11 +119,9 @@ static inline uint32_t fnv_1a(const uint8_t *bytes, const int length) {
 unsigned int map_hash(void *this, void *value) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	if (header->hash) {
-		static_assert(0, "hash using the hasing function");
-		return;
+		return header->hash(value);
 	}
-	static_assert(0, "WRONG!!!, this should hash the fucking value, not the god dammned entire hashmap of values");
-	return (int) fnv_1a(header->bytes, header->n_items*header->itemsize) % header->mapping_capacity;
+	return (unsigned int) fnv_1a(value, header->keysize) % header->mapping_capacity;
 }
 
 int map_len(void *this) {
