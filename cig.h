@@ -164,8 +164,8 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args);
 }))
 
 #define init_arr(PTR, ...) do { \
-	PTR = dyn_array_create_func((dyn_array_create_func_args_t){ \
-		.item_size = sizeof(*PTR), \
+	(*(PTR)) = dyn_array_create_func((dyn_array_create_func_args_t){ \
+		.item_size = sizeof(*(*(PTR))), \
 		.file = __FILE__, \
 		.line = __LINE__, \
 		.allocator = __VA_ARGS__, \
@@ -270,27 +270,30 @@ typedef struct map_create_func_args {
 void *map_create_func(map_create_func_args_t args);
 
 #define init_map(PTR, ...) do { \
-	PTR = map_create_func((map_create_func_args_t) { \
-		.item_size=sizeof(*PTR), \
-		.key_size=sizeof(PTR->key), \
+	(*(PTR)) = map_create_func((map_create_func_args_t) { \
+		.item_size=sizeof(*(*(PTR))), \
+		.key_size=sizeof((*(PTR))->key), \
+		.key_offset=offsetof((*(PTR))->key), \
 		.file=__FILE__, \
 		.line=__LINE__, \
 		.allocator=__VA_ARGS__ \
-		.key_offset=offsetof(PTR->key), \
 	}); \
 } while(0);
-TODO
-#define init_set(PTR, ...) TODO
+
+#define init_set(PTR, ...) do { \
+	(*(PTR)) = map_create_func(map_create_func_args_t) { \
+		.item_size=sizeof(*(*(PTR))), \
+		.key_size=sizeof(*(*(PTR))), \
+		.key_offset=0, \
+		.file=__FILE__, \
+		.line=__LINE__, \
+		.allocator=__VA_ARGS__ \
+	}); \
+} while(0);
 
 int map_len(void *this);
 int map_cap(void *this);
 uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size);
-/*
- * Hashes modulo the header->mapping capacity. Will keep hashing the hash until
- * a free or gravestone slot is found. Does not write to the mapping array, only
- * returns the next valid index to overwrite. Uses default or provided hashing and equals functions
- */
-unsigned int map_pair_hash(void *this, void *pair);
 
 // CLI /////////////////////////////////////////////////////////////////////////
 

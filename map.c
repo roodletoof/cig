@@ -2,7 +2,7 @@
 #include <assert.h>
 
 #define FLAG_FREE       (-1)
-#define FLAG_GRAVESTONE (-2)
+#define FLAG_TOMBSTONE (-2)
 
 static inline unsigned int mapping_cap(unsigned int capacity) {
 	return capacity * 2;
@@ -52,18 +52,113 @@ void *map_create_func(
 	header->mapping_arr = (int*) &header->bytes[sizes.real_cap_of_items_arr];
 	header->mapping_capacity = mapping_cap(args.initial_capacity);
 
-	for ( int i = 0; i < header->mapping_capacity; i++ ) {
+	for ( unsigned int i = 0; i < header->mapping_capacity; i++ ) {
 		header->mapping_arr[i] = FLAG_FREE;
 	}
 
 	return header->bytes;
 }
 
+typedef struct index_pair {
+	unsigned int new_index;
+	unsigned int old_index;
+	bool has_old_index;
+} index_pair_t;
+
+static const void *internal_cig_key_ptr_from_pair_ptr(const void *this, const void *pair) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	return (const void *) &((const char *)pair)[header->key_offset];
+}
+
+// TODO: just make these internal probably
+bool map_key_equals(void *this, const void *key1, const void *key2) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	if (header->equals != NULL) {
+		return header->equals(key1, key2);
+	}
+	const char *key1_bytes = key1;
+	const char *key2_bytes = key2;
+	for ( unsigned int i = 0; i < header->key_size; i++ ) {
+		if (key1_bytes[i] != key2_bytes[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/*
+ * Hashes modulo the header->mapping_capacity. Will linearly probe until a free
+ * slot is found. If the key already exists in the mapping array, that will be
+ * indicated in the return value, and the user is expected to overwrite the old
+ * index with a tombstone if they are going to write a new value for that key.
+ */
+index_pair_t map_pair_hash(void *this, void *pair) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	const void *key = internal_cig_key_ptr_from_pair_ptr(this, pair);
+
+	// find the initial index based on hash
+	uint32_t mapping_index;
+	if (header->hash != NULL) {
+		mapping_index = header->hash(key) % header->mapping_capacity;
+	} else {
+		mapping_index = fnv_1a(key, header->key_size) % header->mapping_capacity;
+	}
+	uint32_t tombstone_index;
+	bool found_tombstone = false;
+
+	// begin probing
+	int existing_value_index = header->mapping_arr[mapping_index];
+	while (
+			existing_value_index != FLAG_FREE &&
+			!map_key_equals(
+				this,
+				internal_cig_key_ptr_from_pair_ptr(
+					this,
+					&header->bytes[existing_value_index * header->item_size]
+				),
+				key
+			)
+		) {
+
+
+		const bool is_tombstone = existing_value_index == FLAG_TOMBSTONE;
+		if ((!found_tombstone) && is_tombstone) {
+			tombstone_index = mapping_index;
+			found_tombstone = true;
+		}
+
+		mapping_index = (mapping_index + 1) % header->mapping_capacity;
+		existing_value_index = header->mapping_arr[mapping_index];
+	}
+
+	// Whatever is at index is either free, or the key is already in the map.
+	//
+	// If the key is already in the map, we instead want to use the earliest
+	// tombstone index we found, if we found one.
+	//
+	// But this also means that we have to know to set the existing mapping
+	// slot to a tombstone value at the time where we insert the key-value
+	// pair.
+
+	if (found_tombstone) {
+		return (index_pair_t) {
+			.has_old_index=true,
+			.new_index=tombstone_index,
+			.old_index=mapping_index,
+		};
+	} else {
+		return (index_pair_t) {
+			.has_old_index=false,
+			.new_index=mapping_index,
+		};
+	}
+}
+
 // Checks that the map can handle one more item. The maps capacity grows if not,
 // usually by doubling the capacity.
 void map_assure_growable_by_1(void **this, const char *file, int line) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, *this);
-	int new_n_items = header->n_items + 1;
+	unsigned int new_n_items = header->n_items + 1;
 	if (new_n_items <= header->mapping_capacity) {
 		return;
 	}
@@ -95,6 +190,9 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 		// TODO: make the map_pair_hash more private? would be nice to just
 		// pass in the header, and I don't really think it is needed
 		// directly by the user of the library.
+		// TODO: this now just completely is wrong, though there will be no
+		// old_indexes in this case, assuming no bugs in the rest of the
+		// program.
 		unsigned int mapping_index = map_pair_hash(this, pair);
 		header->mapping_arr[mapping_index] = i;
 	}
@@ -105,56 +203,12 @@ uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size) {
 	const uint32_t PRIME = 0x01000193;
 	const uint32_t OFFSET = 0x811c9dc5;
 	uint32_t hash = OFFSET;
-	for (int i = 0; i < size; i++) {
+	for (unsigned int i = 0; i < size; i++) {
 		uint32_t byte = (uint32_t)bytes[i];
 		hash = hash ^ byte;
 		hash = hash * PRIME;
 	}
 	return hash;
-}
-
-static void *internal_cig_key_ptr_from_pair_ptr(void *this, void *pair) {
-	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	return &pair[header->key_offset];
-}
-
-// TODO: just make these internal probably
-bool map_key_equals(void *this, const void *key1, const void *key2) {
-	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	if (header->equals != NULL) {
-		return header->equals(key1, key2);
-	}
-	const char *key1_bytes = key1;
-	const char *key2_bytes = key2;
-	for ( int i = 0; i < header->key_size; i++ ) {
-		if (key1_bytes[i] != key2_bytes[i]) {
-			return false;
-		}
-	}
-	return true;
-}
-
-unsigned int map_pair_hash(void *this, void *pair) {
-	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	void *key = internal_cig_key_ptr_from_pair_ptr(this, pair);
-
-	// find the initial index based on hash
-	uint32_t index;
-	if (header->hash != NULL) {
-		index = header->hash(key) % header->mapping_capacity;
-	} else {
-		index = fnv_1a(key, header->key_size) % header->mapping_capacity;
-	}
-
-	int existing_index = header->mapping_arr[index];
-	while (!(existing_index == FLAG_FREE || existing_index == FLAG_GRAVESTONE)) {
-		index = fnv_1a(
-			(const uint8_t *) &index,
-			sizeof(index)
-		) % header->mapping_capacity;
-		int existing_index = header->mapping_arr[index];
-	}
-	return (unsigned int) index;
 }
 
 int map_len(void *this) {
@@ -174,5 +228,5 @@ int map_cap(void *this) {
 }
 
 #undef FLAG_FREE
-#undef FLAG_GRAVESTONE
+#undef FLAG_TOMBSTONE
 
