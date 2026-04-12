@@ -14,7 +14,7 @@ typedef union any_align { char c; int i; long l; long long ll; float f; double d
 #define KB (1024)
 #define MB (KB * KB)
 #define GB (KB * KB * KB)
-#define PTR_FROM_FIELD_PTR(STRUCT, FIELD, PTR) ((STRUCT *) (((char *) PTR) - offsetof(STRUCT, FIELD)))
+#define PTR_FROM_FIELD_PTR(STRUCT, FIELD, PTR) ((STRUCT *) (((char *) (PTR)) - offsetof(STRUCT, FIELD)))
 
 // Contains all operations an allocator can do. Similar interface to sdtlibs
 // malloc, realloc and free.
@@ -235,8 +235,8 @@ void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 
 // maps ////////////////////////////////////////////////////////////////////
 
-typedef unsigned int (*hash_func_t)(void *key);
-typedef bool (*equals_func_t)(void *key1, void *key2);
+typedef unsigned int (*key_hash_func_t)(const void *key);
+typedef bool (*key_equals_func_t)(const void *key1, const void *key2);
 
 typedef struct map_header {
 	unsigned int capacity;
@@ -246,8 +246,8 @@ typedef struct map_header {
 	unsigned int n_items;
 	unsigned int key_offset;
 	allocator_t allocator;
-	hash_func_t hash;
-	equals_func_t equals;
+	key_hash_func_t hash;
+	key_equals_func_t equals;
 	int *mapping_arr;
 	union {
 		uint8_t bytes[1];
@@ -258,8 +258,8 @@ typedef struct map_header {
 typedef struct map_create_func_args {
 	allocator_t allocator;
 	const char *file;
-	hash_func_t hash; // OPTIONAL
-	equals_func_t equals; // OPTIONAL
+	key_hash_func_t hash; // OPTIONAL
+	key_equals_func_t equals; // OPTIONAL
 	unsigned int initial_capacity; // OPTIONAL
 	unsigned int item_size;
 	unsigned int key_offset;
@@ -269,9 +269,7 @@ typedef struct map_create_func_args {
 
 void *map_create_func(map_create_func_args_t args);
 
-// key should be the first item in the key-value struct.
 #define init_map(PTR, ...) do { \
-	STATIC_ASSERT(((size_t)PTR) == ((size_t)(&PTR->key))); \
 	PTR = map_create_func((map_create_func_args_t) { \
 		.item_size=sizeof(*PTR), \
 		.key_size=sizeof(PTR->key), \
@@ -281,6 +279,8 @@ void *map_create_func(map_create_func_args_t args);
 		.key_offset=offsetof(PTR->key), \
 	}); \
 } while(0);
+TODO
+#define init_set(PTR, ...) TODO
 
 int map_len(void *this);
 int map_cap(void *this);

@@ -59,60 +59,45 @@ void *map_create_func(
 	return header->bytes;
 }
 
-void *map_grow_func(void *this, const char *file, int line) {
-	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+// Checks that the map can handle one more item. The maps capacity grows if not,
+// usually by doubling the capacity.
+void map_assure_growable_by_1(void **this, const char *file, int line) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, *this);
 	int new_n_items = header->n_items + 1;
-
-	if (header->capacity < new_n_items) {
-		allocator_t allocator = header->allocator;
-		unsigned int new_capacity = 1;
-		if (header->capacity > 0) {
-			new_capacity = header->capacity * 2;
-		}
-		internal_map_sizes_t new_size = internal_map_sizes(
-			new_capacity,
-			header->item_size
-		);
-		header = allocator_resize_func(allocator, header, new_size.bytes, file, line);
-		header->mapping_arr = (int*) &header->bytes[new_size.real_cap_of_items_arr];
-		header->mapping_capacity = mapping_cap(new_capacity);
-		header->capacity=new_capacity;
-		
-		// first we have to clear the entire mapping array
-		for ( unsigned int i = 0; i < header->mapping_capacity; i++ ) {
-			header->mapping_arr[i] = FLAG_FREE;
-		}
-
-		// Then we have to re-hash and map all the items in the existing map.
-		// The reason for re-hashing is that all hashes are moduloed by the
-		// size of the mapping array, so the resulting hash will likely change.
-		for ( unsigned int i = 0; i < header->n_items; i++ ) {
-			void *pair = &this[i*header->item_size];
-			// TODO: make the map_pair_hash more private? would be nice to just
-			// pass in the header, and I don't really think it is needed
-			// directly by the user of the library.
-			unsigned int mapping_index = map_pair_hash(this, pair);
-			header->mapping_arr[mapping_index] = i;
-		}
+	if (new_n_items <= header->mapping_capacity) {
+		return;
 	}
 
-	header->n_items = new_n_items;
-	return header->bytes;
-}
-
-void map_shrink_func(void *this, const char *file, int line) {
-	if (map_len(this) <= 0) {
-		fprintf(
-			stderr,
-			"%s:%d: tried to shrink map of size 0.\n",
-			file,
-			line
-		);
-		exit(1);
+	allocator_t allocator = header->allocator;
+	unsigned int new_capacity = 1;
+	if (header->capacity > 0) {
+		new_capacity = header->capacity * 2;
 	}
-	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	header->n_items--;
-	static_assert(0, "Hash the key at the removed item to find it in the mapping array, and set it to the gravestone value.");
+	internal_map_sizes_t new_size = internal_map_sizes(
+		new_capacity,
+		header->item_size
+	);
+	header = allocator_resize_func(allocator, header, new_size.bytes, file, line);
+	header->mapping_arr = (int*) &header->bytes[new_size.real_cap_of_items_arr];
+	header->mapping_capacity = mapping_cap(new_capacity);
+	header->capacity=new_capacity;
+	
+	// first we have to clear the entire mapping array
+	for ( unsigned int i = 0; i < header->mapping_capacity; i++ ) {
+		header->mapping_arr[i] = FLAG_FREE;
+	}
+
+	// Then we have to re-hash and map all the items in the existing map.
+	// The reason for re-hashing is that all hashes are moduloed by the
+	// size of the mapping array, so the resulting hash will likely change.
+	for ( unsigned int i = 0; i < header->n_items; i++ ) {
+		void *pair = &this[i*header->item_size];
+		// TODO: make the map_pair_hash more private? would be nice to just
+		// pass in the header, and I don't really think it is needed
+		// directly by the user of the library.
+		unsigned int mapping_index = map_pair_hash(this, pair);
+		header->mapping_arr[mapping_index] = i;
+	}
 }
 
 uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size) {
@@ -134,7 +119,19 @@ static void *internal_cig_key_ptr_from_pair_ptr(void *this, void *pair) {
 }
 
 // TODO: just make these internal probably
-bool map_pair_key_equals(void *this, void *pair1, void *pair2) {
+bool map_key_equals(void *this, const void *key1, const void *key2) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	if (header->equals != NULL) {
+		return header->equals(key1, key2);
+	}
+	const char *key1_bytes = key1;
+	const char *key2_bytes = key2;
+	for ( int i = 0; i < header->key_size; i++ ) {
+		if (key1_bytes[i] != key2_bytes[i]) {
+			return false;
+		}
+	}
+	return true;
 }
 
 unsigned int map_pair_hash(void *this, void *pair) {
