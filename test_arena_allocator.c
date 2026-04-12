@@ -139,7 +139,7 @@ Test(arena_allocator, resize_with_zero_capacity) {
 		typedef struct {
 			size_t size;
 			size_t capacity;
-			size_t itemsize;
+			size_t item_size;
 			allocator_t allocator;
 			uint8_t bytes[];
 		} test_header_t;
@@ -148,7 +148,7 @@ Test(arena_allocator, resize_with_zero_capacity) {
 		test_header_t *header = allocator_alloc(arena, sizeof(test_header_t));
 		header->size = 0;
 		header->capacity = 0;
-		header->itemsize = sizeof(int);
+		header->item_size = sizeof(int);
 		
 		// Resize to add space for 1 element
 		header = allocator_resize(arena, header, sizeof(test_header_t) + sizeof(int) * 1);

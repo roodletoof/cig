@@ -5,13 +5,13 @@
 void *dyn_array_create_func(dyn_array_create_func_args_t args) {
 	dyn_array_header_t *header = allocator_alloc_func(
 		args.allocator,
-		sizeof(dyn_array_header_t) + args.itemsize * args.initial_capacity,
+		sizeof(dyn_array_header_t) + args.item_size * args.initial_capacity,
 		args.file,
 		args.line
 	);
 	header->n_items = 0;
 	header->capacity = args.initial_capacity;
-	header->itemsize = args.itemsize;
+	header->item_size = args.item_size;
 	header->allocator = args.allocator;
 	return &header->bytes;
 }
@@ -29,7 +29,7 @@ void *dyn_array_grow_func(void *this, size_t n_new_items, const char *file, int 
 		header = allocator_resize_func(
 			header->allocator,
 			header,
-			sizeof(dyn_array_header_t) + header->itemsize * new_capacity,
+			sizeof(dyn_array_header_t) + header->item_size * new_capacity,
 			file,
 			line
 		);
@@ -71,8 +71,8 @@ bool dyn_array_contains_func(void *this, uint8_t *value) {
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
 	for (size_t i = 0; i < header->n_items; i++) {
 		bool is_equal = true;
-		for (size_t off = 0; off < header->itemsize; off++) {
-			if (header->bytes[i*header->itemsize+off] != value[off]) {
+		for (size_t off = 0; off < header->item_size; off++) {
+			if (header->bytes[i*header->item_size+off] != value[off]) {
 				is_equal = false;
 				break;
 			}
@@ -86,10 +86,10 @@ bool dyn_array_contains_func(void *this, uint8_t *value) {
 
 bool dyn_array_contains_eq_func(void *this, uint8_t *value, dyn_array_eq_fn eq) {
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-	size_t itemsize = header->itemsize;
+	size_t item_size = header->item_size;
 	
 	for (size_t i = 0; i < header->n_items; i++) {
-		void *element = &header->bytes[i * itemsize];
+		void *element = &header->bytes[i * item_size];
 		if (eq(element, value)) {
 			return true;
 		}
@@ -116,5 +116,5 @@ void dyn_array_bounds_check_func(void *this, size_t index, const char *file, int
 
 void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn) {
 	dyn_array_header_t *header = PTR_FROM_FIELD_PTR(dyn_array_header_t, bytes, this);
-	qsort(this, header->n_items, header->itemsize, cmp_fn);
+	qsort(this, header->n_items, header->item_size, cmp_fn);
 }

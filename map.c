@@ -1,29 +1,29 @@
 #include "cig.h"
 #include <assert.h>
 
-#define FREE       (-1)
-#define GRAVESTONE (-2)
+#define FLAG_FREE       (-1)
+#define FLAG_GRAVESTONE (-2)
 
-static inline int mapping_cap(int capacity) {
+static inline unsigned int mapping_cap(unsigned int capacity) {
 	return capacity * 2;
 }
 
 typedef struct internal_map_sizes {
 	int bytes;
-	int cap_of_items_arr;
+	int real_cap_of_items_arr;
 } internal_map_sizes_t;
 
-internal_map_sizes_t internal_map_sizes(int capacity, int itemsize) {
+internal_map_sizes_t internal_map_sizes(unsigned int capacity, unsigned int item_size) {
 	const size_t cap_of_index_arr =
 		sizeof(int) * mapping_cap(capacity);
 	const size_t INC = ALIGN_OF(int);
-	const size_t SIZE = itemsize * capacity;
+	const size_t SIZE = item_size * capacity;
 	const size_t cap_of_items_arr = (SIZE + INC - 1) / INC;
 	const size_t bytes =
 		sizeof(map_header_t) + cap_of_items_arr + cap_of_index_arr;
 	return (internal_map_sizes_t){
 		.bytes=bytes,
-		.cap_of_items_arr=cap_of_items_arr,
+		.real_cap_of_items_arr=cap_of_items_arr,
 	};
 }
 
@@ -32,7 +32,7 @@ void *map_create_func(
 ) {
 	internal_map_sizes_t sizes = internal_map_sizes(
 		args.initial_capacity,
-		args.itemsize
+		args.item_size
 	);
 	map_header_t *header =
 		allocator_alloc_func(
@@ -44,16 +44,16 @@ void *map_create_func(
 
 	header->n_items = 0;
 	header->capacity = args.initial_capacity;
-	header->itemsize = args.itemsize;
-	header->keysize = args.keysize;
+	header->item_size = args.item_size;
+	header->key_size = args.key_size;
 	header->allocator = args.allocator;
 	header->hash = args.hash;
 	header->equals = args.equals;
-	header->mapping_arr = (int*) &header->bytes[sizes.cap_of_items_arr];
+	header->mapping_arr = (int*) &header->bytes[sizes.real_cap_of_items_arr];
 	header->mapping_capacity = mapping_cap(args.initial_capacity);
 
 	for ( int i = 0; i < header->mapping_capacity; i++ ) {
-		header->mapping_arr[i] = -1;
+		header->mapping_arr[i] = FLAG_FREE;
 	}
 
 	return header->bytes;
@@ -61,30 +61,42 @@ void *map_create_func(
 
 void *map_grow_func(void *this, const char *file, int line) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	int new_size = header->n_items + 1;
+	int new_n_items = header->n_items + 1;
 
-	if (header->capacity < new_size) {
+	if (header->capacity < new_n_items) {
 		allocator_t allocator = header->allocator;
-		int new_capacity = 1;
+		unsigned int new_capacity = 1;
 		if (header->capacity > 0) {
 			new_capacity = header->capacity * 2;
 		}
 		internal_map_sizes_t new_size = internal_map_sizes(
 			new_capacity,
-			header->itemsize
+			header->item_size
 		);
 		header = allocator_resize_func(allocator, header, new_size.bytes, file, line);
+		header->mapping_arr = (int*) &header->bytes[new_size.real_cap_of_items_arr];
+		header->mapping_capacity = mapping_cap(new_capacity);
+		header->capacity=new_capacity;
 		
-		static_assert(0, "Overwrite the mapping arr with -1, then iterate"
-		"through the items arr and find the hashes of the values to populate the"
-		"mappings");
-			
-		static_assert(0, "make sure the mapping_arr field is set to the new and"
-		"correct pointer!");
-			
+		// first we have to clear the entire mapping array
+		for ( unsigned int i = 0; i < header->mapping_capacity; i++ ) {
+			header->mapping_arr[i] = FLAG_FREE;
+		}
+
+		// Then we have to re-hash and map all the items in the existing map.
+		// The reason for re-hashing is that all hashes are moduloed by the
+		// size of the mapping array, so the resulting hash will likely change.
+		for ( unsigned int i = 0; i < header->n_items; i++ ) {
+			void *pair = &this[i*header->item_size];
+			// TODO: make the map_pair_hash more private? would be nice to just
+			// pass in the header, and I don't really think it is needed
+			// directly by the user of the library.
+			unsigned int mapping_index = map_pair_hash(this, pair);
+			header->mapping_arr[mapping_index] = i;
+		}
 	}
 
-	header->n_items = new_size;
+	header->n_items = new_n_items;
 	return header->bytes;
 }
 
@@ -103,12 +115,12 @@ void map_shrink_func(void *this, const char *file, int line) {
 	static_assert(0, "Hash the key at the removed item to find it in the mapping array, and set it to the gravestone value.");
 }
 
-static inline uint32_t fnv_1a(const uint8_t *bytes, const int length) {
+uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size) {
 	// Yanked from: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 	const uint32_t PRIME = 0x01000193;
 	const uint32_t OFFSET = 0x811c9dc5;
 	uint32_t hash = OFFSET;
-	for (int i = 0; i < length; i++) {
+	for (int i = 0; i < size; i++) {
 		uint32_t byte = (uint32_t)bytes[i];
 		hash = hash ^ byte;
 		hash = hash * PRIME;
@@ -116,12 +128,36 @@ static inline uint32_t fnv_1a(const uint8_t *bytes, const int length) {
 	return hash;
 }
 
-unsigned int map_hash(void *this, void *value) {
+static void *internal_cig_key_ptr_from_pair_ptr(void *this, void *pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	if (header->hash) {
-		return header->hash(value);
+	return &pair[header->key_offset];
+}
+
+// TODO: just make these internal probably
+bool map_pair_key_equals(void *this, void *pair1, void *pair2) {
+}
+
+unsigned int map_pair_hash(void *this, void *pair) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	void *key = internal_cig_key_ptr_from_pair_ptr(this, pair);
+
+	// find the initial index based on hash
+	uint32_t index;
+	if (header->hash != NULL) {
+		index = header->hash(key) % header->mapping_capacity;
+	} else {
+		index = fnv_1a(key, header->key_size) % header->mapping_capacity;
 	}
-	return (unsigned int) fnv_1a(value, header->keysize) % header->mapping_capacity;
+
+	int existing_index = header->mapping_arr[index];
+	while (!(existing_index == FLAG_FREE || existing_index == FLAG_GRAVESTONE)) {
+		index = fnv_1a(
+			(const uint8_t *) &index,
+			sizeof(index)
+		) % header->mapping_capacity;
+		int existing_index = header->mapping_arr[index];
+	}
+	return (unsigned int) index;
 }
 
 int map_len(void *this) {
@@ -140,6 +176,6 @@ int map_cap(void *this) {
 	return header->capacity;
 }
 
-#undef FREE
-#undef GRAVESTONE
+#undef FLAG_FREE
+#undef FLAG_GRAVESTONE
 

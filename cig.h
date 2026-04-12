@@ -138,7 +138,7 @@ allocator_t allocator_from_arena(arena_allocator_t *this);
 // dynamic arrays //////////////////////////////////////////////////////////////
 
 typedef struct dyn_array_header {
-	size_t n_items, capacity, itemsize;
+	size_t n_items, capacity, item_size;
 	allocator_t allocator;
 	union {
 		// allocates a little more memory than needed, but who cares?
@@ -149,7 +149,7 @@ typedef struct dyn_array_header {
 
 typedef struct dyn_array_create_func_args {
 	allocator_t allocator;
-	size_t itemsize;
+	size_t item_size;
 	size_t initial_capacity;
 	const char *file;
 	int line;
@@ -157,7 +157,7 @@ typedef struct dyn_array_create_func_args {
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
 
 #define make_arr(TYPE, ...) ((TYPE *)dyn_array_create_func((dyn_array_create_func_args_t){ \
-	.itemsize = sizeof(TYPE), \
+	.item_size = sizeof(TYPE), \
 	.file = __FILE__, \
 	.line = __LINE__, \
 	.allocator = __VA_ARGS__, \
@@ -165,7 +165,7 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args);
 
 #define init_arr(PTR, ...) do { \
 	PTR = dyn_array_create_func((dyn_array_create_func_args_t){ \
-		.itemsize = sizeof(*PTR), \
+		.item_size = sizeof(*PTR), \
 		.file = __FILE__, \
 		.line = __LINE__, \
 		.allocator = __VA_ARGS__, \
@@ -239,11 +239,12 @@ typedef unsigned int (*hash_func_t)(void *key);
 typedef bool (*equals_func_t)(void *key1, void *key2);
 
 typedef struct map_header {
-	int capacity;
-	int itemsize;
-	int keysize;
-	int mapping_capacity;
-	int n_items;
+	unsigned int capacity;
+	unsigned int item_size;
+	unsigned int key_size;
+	unsigned int mapping_capacity;
+	unsigned int n_items;
+	unsigned int key_offset;
 	allocator_t allocator;
 	hash_func_t hash;
 	equals_func_t equals;
@@ -259,9 +260,10 @@ typedef struct map_create_func_args {
 	const char *file;
 	hash_func_t hash; // OPTIONAL
 	equals_func_t equals; // OPTIONAL
-	int initial_capacity; // OPTIONAL
-	int itemsize;
-	int keysize;
+	unsigned int initial_capacity; // OPTIONAL
+	unsigned int item_size;
+	unsigned int key_offset;
+	unsigned int key_size;
 	int line;
 } map_create_func_args_t;
 
@@ -271,16 +273,24 @@ void *map_create_func(map_create_func_args_t args);
 #define init_map(PTR, ...) do { \
 	STATIC_ASSERT(((size_t)PTR) == ((size_t)(&PTR->key))); \
 	PTR = map_create_func((map_create_func_args_t) { \
-		.itemsize=sizeof(*PTR), \
-		.keysize=sizeof(PTR->key), \
+		.item_size=sizeof(*PTR), \
+		.key_size=sizeof(PTR->key), \
 		.file=__FILE__, \
 		.line=__LINE__, \
 		.allocator=__VA_ARGS__ \
+		.key_offset=offsetof(PTR->key), \
 	}); \
 } while(0);
 
 int map_len(void *this);
 int map_cap(void *this);
+uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size);
+/*
+ * Hashes modulo the header->mapping capacity. Will keep hashing the hash until
+ * a free or gravestone slot is found. Does not write to the mapping array, only
+ * returns the next valid index to overwrite. Uses default or provided hashing and equals functions
+ */
+unsigned int map_pair_hash(void *this, void *pair);
 
 // CLI /////////////////////////////////////////////////////////////////////////
 
