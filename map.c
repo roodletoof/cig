@@ -193,6 +193,10 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 		// TODO: this now just completely is wrong, though there will be no
 		// old_indexes in this case, assuming no bugs in the rest of the
 		// program.
+		// TODO: when setting a key to a gravestone, then while the mapping
+		// item to the right is FLAG_FREE, you can set this one to FLAG_FREE,
+		// go one index less, and if that is also a FLAG_GRAVESTONE, you can
+		// continue the process.
 		unsigned int mapping_index = map_pair_hash(this, pair);
 		header->mapping_arr[mapping_index] = i;
 	}
