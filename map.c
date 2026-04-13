@@ -1,8 +1,13 @@
 #include "cig.h"
 #include <assert.h>
 
-#define FLAG_FREE       (-1)
+#define FLAG_FREE      (-1)
 #define FLAG_TOMBSTONE (-2)
+
+// TODO: when setting a key to a gravestone, then while the mapping
+// item to the right is FLAG_FREE, you can set this one to FLAG_FREE,
+// go one index less, and if that is also a FLAG_GRAVESTONE, you can
+// continue the process.
 
 static inline unsigned int mapping_cap(unsigned int capacity) {
 	return capacity * 2;
@@ -187,17 +192,10 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 	// size of the mapping array, so the resulting hash will likely change.
 	for ( unsigned int i = 0; i < header->n_items; i++ ) {
 		void *pair = &this[i*header->item_size];
-		// TODO: make the map_pair_hash more private? would be nice to just
-		// pass in the header, and I don't really think it is needed
-		// directly by the user of the library.
-		// TODO: this now just completely is wrong, though there will be no
-		// old_indexes in this case, assuming no bugs in the rest of the
-		// program.
-		// TODO: when setting a key to a gravestone, then while the mapping
-		// item to the right is FLAG_FREE, you can set this one to FLAG_FREE,
-		// go one index less, and if that is also a FLAG_GRAVESTONE, you can
-		// continue the process.
-		unsigned int mapping_index = map_pair_hash(this, pair);
+		// This is okay, because we absolutely know that the keys don't already
+		// exist. (assuming all the other code for map is doing it's job)
+
+		unsigned int mapping_index = map_pair_hash(this, pair).new_index;
 		header->mapping_arr[mapping_index] = i;
 	}
 }
