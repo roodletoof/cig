@@ -201,7 +201,7 @@ index_pair_t map_pair_hash(void *this, void *pair) {
 void map_assure_growable_by_1(void **this, const char *file, int line) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, *this);
 	unsigned int new_n_items = header->n_items + 1;
-	if (new_n_items <= header->mapping_capacity) {
+	if (new_n_items <= header->capacity) {
 		return;
 	}
 

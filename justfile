@@ -11,7 +11,7 @@ run_foobar: build_foobar
     ./{{FOOBAR}}
 
 build_foobar:
-    {{CC}} ./foobar.c -o {{FOOBAR}}
+    {{CC}} ./foobar.c -o {{FOOBAR}} {{CFLAGS}}
 
 clean_foobar:
     rm {{FOOBAR}}
