@@ -280,7 +280,7 @@ void *map_create_func(map_create_func_args_t args);
 	}); \
 } while(0)
 
-#define init_set(PTR, ...) do { \
+#define set_init(PTR, ...) do { \
 	(*(PTR)) = map_create_func((map_create_func_args_t) { \
 		.item_size=sizeof(*(*(PTR))), \
 		.key_size=sizeof(*(*(PTR))), \
@@ -291,8 +291,12 @@ void *map_create_func(map_create_func_args_t args);
 	}); \
 } while(0)
 
-int map_len(void *this);
-int map_cap(void *this);
+int map_len_func(void *this);
+#define map_len(THIS) map_len_func((void*) THIS)
+
+int map_cap_func(void *this);
+#define map_cap(THIS) map_cap_func((void*) THIS)
+
 uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size);
 // Used for debugging the mapping array. Prints out nerdfonts icons to indicate
 // the state of each mapping slot.
@@ -314,10 +318,13 @@ typedef struct index_pair {
  */
 index_pair_t map_pair_hash(void *this, void *pair);
 
-// TODO: NOT DONE
-#define map_add(THIS, PAIR) do { \
-	map_assure_growable_by_1(THIS, __FILE__, __LINE__); \
-	index_pair_t idx_pair = map_pair_hash((*(THIS)), pair); \
+// TODO: NOT DONE!!! FIRST try to get the existing in
+#define set_add(THIS, VALUE) do { \
+	map_assure_growable_by_1((void**)THIS, __FILE__, __LINE__); \
+	unsigned int len = map_len(*(THIS)); \
+	(*(THIS))[len] = VALUE; \
+	index_pair_t idx_pair = map_pair_hash((*(THIS)), &(*(THIS))[len]); \
+	(*(THIS))[map_place((*(THIS)), idx_pair)] = VALUE; \
 } while (0)
 
 // CLI /////////////////////////////////////////////////////////////////////////

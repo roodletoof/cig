@@ -117,7 +117,7 @@ bool map_key_equals(void *this, const void *key1, const void *key2) {
 	return true;
 }
 
-int map_place(void *this, index_pair_t idx_pair) {
+unsigned int map_place(void *this, index_pair_t idx_pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	if (idx_pair.has_old_index) {
 		header->mapping_arr[idx_pair.new_index] = header->mapping_arr[idx_pair.old_index];
@@ -129,10 +129,11 @@ int map_place(void *this, index_pair_t idx_pair) {
 				break;
 			}
 		}
+	} else {
+		header->mapping_arr[idx_pair.new_index] = header->n_items;
 	}
-	// TODO WRONG!!!
 
-	return idx_pair.new_index;
+	return header->mapping_arr[idx_pair.new_index];
 }
 
 index_pair_t map_pair_hash(void *this, void *pair) {
@@ -249,7 +250,7 @@ uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size) {
 	return hash;
 }
 
-int map_len(void *this) {
+int map_len_func(void *this) {
 	if (this == NULL) {
 		return 0;
 	}
@@ -257,7 +258,7 @@ int map_len(void *this) {
 	return header->n_items;
 }
 
-int map_cap(void *this) {
+int map_cap_func(void *this) {
 	if (this == NULL) {
 		return 0;
 	}
