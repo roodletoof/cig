@@ -1,13 +1,38 @@
 #include "cig.h"
 #include <assert.h>
+#include <stdio.h>
 
 #define FLAG_FREE      (-1)
 #define FLAG_TOMBSTONE (-2)
+
 
 // TODO: when setting a key to a gravestone, then while the mapping
 // item to the right is FLAG_FREE, you can set this one to FLAG_FREE,
 // go one index less, and if that is also a FLAG_GRAVESTONE, you can
 // continue the process.
+
+#define ESC "\033["
+#define RED ESC "31m"
+#define DEFAULT ESC "0m"
+#define COLORED(COLOR, TEXT) COLOR TEXT DEFAULT
+
+void map_print_mapping_state(void *this, FILE *file) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	for ( int i = 0; i < header->mapping_capacity; i++ ) {
+		int mapping = header->mapping_arr[i];
+
+		if (mapping == FLAG_TOMBSTONE) {
+			fprintf(file, "󰮢");
+		} else if (mapping == FLAG_FREE) {
+			fprintf(file, "");
+		} else if (mapping < 0) {
+			fprintf(file, COLORED(RED, ""));
+		} else {
+			fprintf(file, "");
+		}
+	}
+	fprintf(file, "\n");
+}
 
 static inline unsigned int mapping_cap(unsigned int capacity) {
 	return capacity * 2;

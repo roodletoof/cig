@@ -294,6 +294,9 @@ void *map_create_func(map_create_func_args_t args);
 int map_len(void *this);
 int map_cap(void *this);
 uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size);
+// Used for debugging the mapping array. Prints out nerdfonts icons to indicate
+// the state of each mapping slot.
+void map_print_mapping_state(void *this, FILE *file);
 
 // CLI /////////////////////////////////////////////////////////////////////////
 
