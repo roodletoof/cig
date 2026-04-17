@@ -170,7 +170,7 @@ void *dyn_array_create_func(dyn_array_create_func_args_t args);
 		.line = __LINE__, \
 		.allocator = __VA_ARGS__, \
 	}); \
-} while(0);
+} while(0)
 
 // Always reassign the array. if multiple variables reference the same growing
 // array, then you should be using pointer pointers.
@@ -278,10 +278,10 @@ void *map_create_func(map_create_func_args_t args);
 		.line=__LINE__, \
 		.allocator=__VA_ARGS__ \
 	}); \
-} while(0);
+} while(0)
 
 #define init_set(PTR, ...) do { \
-	(*(PTR)) = map_create_func(map_create_func_args_t) { \
+	(*(PTR)) = map_create_func((map_create_func_args_t) { \
 		.item_size=sizeof(*(*(PTR))), \
 		.key_size=sizeof(*(*(PTR))), \
 		.key_offset=0, \
@@ -289,7 +289,7 @@ void *map_create_func(map_create_func_args_t args);
 		.line=__LINE__, \
 		.allocator=__VA_ARGS__ \
 	}); \
-} while(0);
+} while(0)
 
 int map_len(void *this);
 int map_cap(void *this);
@@ -297,6 +297,28 @@ uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size);
 // Used for debugging the mapping array. Prints out nerdfonts icons to indicate
 // the state of each mapping slot.
 void map_print_mapping_state(void *this, FILE *file);
+// Checks that the map can handle one more item. The maps capacity grows if not,
+// usually by doubling the capacity.
+void map_assure_growable_by_1(void **this, const char *file, int line);
+
+typedef struct index_pair {
+	unsigned int new_index;
+	unsigned int old_index;
+	bool has_old_index;
+} index_pair_t;
+/*
+ * Hashes modulo the header->mapping_capacity. Will linearly probe until a free
+ * slot is found. If the key already exists in the mapping array, that will be
+ * indicated in the return value, and the user is expected to overwrite the old
+ * index with a tombstone if they are going to write a new value for that key.
+ */
+index_pair_t map_pair_hash(void *this, void *pair);
+
+// TODO: NOT DONE
+#define map_add(THIS, PAIR) do { \
+	map_assure_growable_by_1(THIS, __FILE__, __LINE__); \
+	index_pair_t idx_pair = map_pair_hash((*(THIS)), pair); \
+} while (0)
 
 // CLI /////////////////////////////////////////////////////////////////////////
 

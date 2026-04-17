@@ -16,6 +16,13 @@
 #define DEFAULT ESC "0m"
 #define COLORED(COLOR, TEXT) COLOR TEXT DEFAULT
 
+static int internal_map_mod(int a, int b) {
+    int r = a % b;
+    if (r < 0) r += (b > 0 ? b : -b);
+    return r;
+}
+#define mod(a, b) internal_map_mod(a, b)
+
 void map_print_mapping_state(void *this, FILE *file) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	for ( int i = 0; i < header->mapping_capacity; i++ ) {
@@ -89,12 +96,6 @@ void *map_create_func(
 	return header->bytes;
 }
 
-typedef struct index_pair {
-	unsigned int new_index;
-	unsigned int old_index;
-	bool has_old_index;
-} index_pair_t;
-
 static const void *internal_cig_key_ptr_from_pair_ptr(const void *this, const void *pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	return (const void *) &((const char *)pair)[header->key_offset];
@@ -116,12 +117,24 @@ bool map_key_equals(void *this, const void *key1, const void *key2) {
 	return true;
 }
 
-/*
- * Hashes modulo the header->mapping_capacity. Will linearly probe until a free
- * slot is found. If the key already exists in the mapping array, that will be
- * indicated in the return value, and the user is expected to overwrite the old
- * index with a tombstone if they are going to write a new value for that key.
- */
+int map_place(void *this, index_pair_t idx_pair) {
+	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+	if (idx_pair.has_old_index) {
+		header->mapping_arr[idx_pair.new_index] = header->mapping_arr[idx_pair.old_index];
+		header->mapping_arr[idx_pair.old_index] = FLAG_TOMBSTONE;
+		for ( long i = idx_pair.old_index; i != idx_pair.new_index; mod(i-1, header->mapping_capacity) ) {
+			if (header->mapping_arr[i] == FLAG_TOMBSTONE) {
+				header->mapping_arr[i] = FLAG_FREE;
+			} else {
+				break;
+			}
+		}
+	}
+	// TODO WRONG!!!
+
+	return idx_pair.new_index;
+}
+
 index_pair_t map_pair_hash(void *this, void *pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	const void *key = internal_cig_key_ptr_from_pair_ptr(this, pair);
@@ -184,8 +197,6 @@ index_pair_t map_pair_hash(void *this, void *pair) {
 	}
 }
 
-// Checks that the map can handle one more item. The maps capacity grows if not,
-// usually by doubling the capacity.
 void map_assure_growable_by_1(void **this, const char *file, int line) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, *this);
 	unsigned int new_n_items = header->n_items + 1;

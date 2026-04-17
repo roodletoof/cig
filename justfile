@@ -5,6 +5,17 @@ TESTBIN := "/tmp/all_tests"
 
 set shell := ["bash", "-cu"]
 
+FOOBAR := "foobar"
+
+run_foobar: build_foobar
+    ./{{FOOBAR}}
+
+build_foobar:
+    {{CC}} ./foobar.c -o {{FOOBAR}}
+
+clean_foobar:
+    rm {{FOOBAR}}
+
 test: build
 	{{TESTBIN}}
 
