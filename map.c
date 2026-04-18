@@ -25,7 +25,7 @@ static int internal_map_mod(int a, int b) {
 
 void map_print_mapping_state(void *this, FILE *file) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	for ( int i = 0; i < header->mapping_capacity; i++ ) {
+	for ( unsigned int i = 0; i < header->mapping_capacity; i++ ) {
 		int mapping = header->mapping_arr[i];
 
 		if (mapping == FLAG_TOMBSTONE) {
@@ -131,6 +131,7 @@ unsigned int map_place(void *this, index_pair_t idx_pair) {
 		}
 	} else {
 		header->mapping_arr[idx_pair.new_index] = header->n_items;
+		header->n_items++;
 	}
 
 	return header->mapping_arr[idx_pair.new_index];
