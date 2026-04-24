@@ -100,9 +100,9 @@ void *map_create_func(
 	return header->bytes;
 }
 
-static const void *internal_cig_key_ptr_from_pair_ptr(const void *this, const void *pair) {
+static const uint8_t *internal_cig_key_ptr_from_pair_ptr(const void *this, const void *pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	return (const void *) &((const char *)pair)[header->key_offset];
+	return (const uint8_t *) &((const char *)pair)[header->key_offset];
 }
 
 // TODO: just make these internal probably
@@ -143,7 +143,7 @@ unsigned int map_place(void *this, index_pair_t idx_pair) {
 
 index_pair_t map_pair_hash(void *this, void *pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	const void *key = internal_cig_key_ptr_from_pair_ptr(this, pair);
+	const uint8_t *key = internal_cig_key_ptr_from_pair_ptr(this, pair);
 
 	// find the initial index based on hash
 	uint32_t mapping_index;
