@@ -29,5 +29,5 @@ test_memcheck: build
 build:
 	find "$PWD" -type f -name 'test*.c' | xargs -r {{CC}} {{CFLAGS}} _allocator_impl.c -o {{TESTBIN}} {{LDFLAGS}}
 
-tags:
+tag:
 	find "$PWD" -type f \( -name '*.c' -o -name '*.h' \) | xargs ctags
