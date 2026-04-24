@@ -1,5 +1,6 @@
 #include "cig.h"
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #define FLAG_FREE      (-1)
@@ -46,21 +47,19 @@ static inline unsigned int mapping_cap(unsigned int capacity) {
 }
 
 typedef struct internal_map_sizes {
-	int bytes;
-	int real_cap_of_items_arr;
+	size_t header_bytes;
+	size_t mapping_arr_bytes;
 } internal_map_sizes_t;
 
-internal_map_sizes_t internal_map_sizes(unsigned int capacity, unsigned int item_size) {
-	const size_t cap_of_index_arr =
-		sizeof(int) * mapping_cap(capacity);
-	const size_t INC = ALIGN_OF(int);
-	const size_t SIZE = item_size * capacity;
-	const size_t cap_of_items_arr = (SIZE + INC - 1) / INC;
-	const size_t bytes =
-		sizeof(map_header_t) + cap_of_items_arr + cap_of_index_arr;
+internal_map_sizes_t internal_map_sizes(size_t capacity, size_t item_size) {
+	const size_t header_bytes = sizeof(map_header_t) + item_size * capacity;
+	map_header_t foo;
+	// TODO: this is shit. I am defining that the mapping arr is 2x the size of
+	// the items arr in multiple places. Figure this out at some point.
+	const size_t mapping_arr_bytes = sizeof(*foo.mapping_arr) * capacity * 2;
 	return (internal_map_sizes_t){
-		.bytes=bytes,
-		.real_cap_of_items_arr=cap_of_items_arr,
+		.header_bytes=header_bytes,
+		.mapping_arr_bytes=mapping_arr_bytes,
 	};
 }
 
@@ -71,13 +70,20 @@ void *map_create_func(
 		args.initial_capacity,
 		args.item_size
 	);
-	map_header_t *header =
-		allocator_alloc_func(
-			args.allocator,
-			sizes.bytes,
-			args.file,
-			args.line
-		);
+	map_header_t *header = allocator_alloc_func(
+		args.allocator,
+		sizes.header_bytes,
+		args.file,
+		args.line
+	);
+
+	header->mapping_arr = allocator_alloc_func(
+		args.allocator,
+		sizes.mapping_arr_bytes,
+		args.file,
+		args.line
+	);
+	header->mapping_capacity = args.initial_capacity * 2;
 
 	header->n_items = 0;
 	header->capacity = args.initial_capacity;
@@ -86,8 +92,6 @@ void *map_create_func(
 	header->allocator = args.allocator;
 	header->hash = args.hash;
 	header->equals = args.equals;
-	header->mapping_arr = (int*) &header->bytes[sizes.real_cap_of_items_arr];
-	header->mapping_capacity = mapping_cap(args.initial_capacity);
 
 	for ( unsigned int i = 0; i < header->mapping_capacity; i++ ) {
 		header->mapping_arr[i] = FLAG_FREE;
@@ -215,9 +219,10 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 		new_capacity,
 		header->item_size
 	);
-	header = allocator_resize_func(allocator, header, new_size.bytes, file, line);
-	header->mapping_arr = (int*) &header->bytes[new_size.real_cap_of_items_arr];
-	header->mapping_capacity = mapping_cap(new_capacity);
+
+	header = allocator_resize_func(allocator, header, new_size.header_bytes, file, line);
+	header->mapping_arr = (int*) allocator_resize_func(allocator, header->mapping_arr, new_size.mapping_arr_bytes, file, line);
+	header->mapping_capacity = new_capacity * 2;
 	header->capacity=new_capacity;
 	
 	// first we have to clear the entire mapping array
