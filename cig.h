@@ -156,14 +156,14 @@ typedef struct dyn_array_create_func_args {
 } dyn_array_create_func_args_t;
 void *dyn_array_create_func(dyn_array_create_func_args_t args);
 
-#define make_arr(TYPE, ...) ((TYPE *)dyn_array_create_func((dyn_array_create_func_args_t){ \
+#define arr_make(TYPE, ...) ((TYPE *)dyn_array_create_func((dyn_array_create_func_args_t){ \
 	.item_size = sizeof(TYPE), \
 	.file = __FILE__, \
 	.line = __LINE__, \
 	.allocator = __VA_ARGS__, \
 }))
 
-#define init_arr(PTR, ...) do { \
+#define arr_init(PTR, ...) do { \
 	(*(PTR)) = dyn_array_create_func((dyn_array_create_func_args_t){ \
 		.item_size = sizeof(*(*(PTR))), \
 		.file = __FILE__, \
@@ -269,7 +269,7 @@ typedef struct map_create_func_args {
 
 void *map_create_func(map_create_func_args_t args);
 
-#define init_map(PTR, ...) do { \
+#define map_init(PTR, ...) do { \
 	(*(PTR)) = map_create_func((map_create_func_args_t) { \
 		.item_size=sizeof(*(*(PTR))), \
 		.key_size=sizeof((*(PTR))->key), \
@@ -317,6 +317,7 @@ typedef struct index_pair {
  * index with a tombstone if they are going to write a new value for that key.
  */
 index_pair_t map_pair_hash(void *this, void *pair);
+unsigned int map_place(void *this, index_pair_t idx_pair);
 
 // TODO: NOT DONE!!! FIRST try to get the existing in
 #define set_add(THIS, VALUE) do { \

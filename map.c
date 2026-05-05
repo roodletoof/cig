@@ -102,7 +102,7 @@ void *map_create_func(
 
 static const uint8_t *internal_cig_key_ptr_from_pair_ptr(const void *this, const void *pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	return (const uint8_t *) &((const char *)pair)[header->key_offset];
+	return (const uint8_t *) (&((const char *)pair)[header->key_offset]);
 }
 
 // TODO: just make these internal probably
@@ -238,6 +238,11 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 		// This is okay, because we absolutely know that the keys don't already
 		// exist. (assuming all the other code for map is doing it's job)
 
+		// TODO: when the header is retrieved within the map_pair_hash function the address is completely wrong. Scrambles the parameters and fucks everyghing!!!
+		// TODO!!!
+		// TODO!!!
+		// TODO!!!
+		// TODO!!!
 		unsigned int mapping_index = map_pair_hash(this, pair).new_index;
 		header->mapping_arr[mapping_index] = i;
 	}

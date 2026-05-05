@@ -8,7 +8,7 @@ static bool int_eq(const void *a, const void *b) {
 
 Test(dynamic_arrays, append) {
 	with_borrow(alloc) {
-		int *numbers = make_arr(int, alloc);
+		int *numbers = arr_make(int, alloc);
 		arr_append(numbers, 40);
 		arr_append(numbers, 41);
 		arr_append(numbers, 42);
@@ -28,7 +28,7 @@ Test(dynamic_arrays, append) {
 
 Test(dynamic_arrays, pop) {
 	with_borrow(alloc) {
-		int *numbers = make_arr(int, alloc);
+		int *numbers = arr_make(int, alloc);
 		arr_append(numbers, 40);
 		arr_append(numbers, 41);
 		arr_append(numbers, 42);
@@ -55,7 +55,7 @@ Test(dynamic_arrays, pop) {
 
 Test(dynamic_arrays, contains) {
 	with_borrow(alloc) {
-		int *numbers = make_arr(int, alloc);
+		int *numbers = arr_make(int, alloc);
 		arr_append(numbers, 20);
 		cr_expect(arr_contains(numbers, (int){20}));
 		arr_reset(numbers);
@@ -75,7 +75,7 @@ Test(dynamic_arrays, contains) {
 
 Test(dynamic_arrays, contains_found) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc, .initial_capacity = 5);
+		int *arr = arr_make(int, alloc, .initial_capacity = 5);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		arr_append(arr, 30);
@@ -88,7 +88,7 @@ Test(dynamic_arrays, contains_found) {
 
 Test(dynamic_arrays, contains_not_found) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc, .initial_capacity = 5);
+		int *arr = arr_make(int, alloc, .initial_capacity = 5);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		arr_append(arr, 30);
@@ -101,7 +101,7 @@ Test(dynamic_arrays, contains_not_found) {
 
 Test(dynamic_arrays, contains_empty) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc, .initial_capacity = 5);
+		int *arr = arr_make(int, alloc, .initial_capacity = 5);
 		
 		cr_assert_not(arr_contains(arr, (int){10}));
 	}
@@ -110,7 +110,7 @@ Test(dynamic_arrays, contains_empty) {
 
 Test(dynamic_arrays, contains_cmp_found) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc, .initial_capacity = 5);
+		int *arr = arr_make(int, alloc, .initial_capacity = 5);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		arr_append(arr, 30);
@@ -123,7 +123,7 @@ Test(dynamic_arrays, contains_cmp_found) {
 
 Test(dynamic_arrays, contains_cmp_not_found) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc, .initial_capacity = 5);
+		int *arr = arr_make(int, alloc, .initial_capacity = 5);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		arr_append(arr, 30);
@@ -136,7 +136,7 @@ Test(dynamic_arrays, contains_cmp_not_found) {
 
 Test(dynamic_arrays, contains_cmp_empty) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc, .initial_capacity = 5);
+		int *arr = arr_make(int, alloc, .initial_capacity = 5);
 		
 		cr_assert_not(arr_contains_cmp(arr, int_eq, (int){10}));
 	}
@@ -156,7 +156,7 @@ static bool kv_eq_by_key(const void *a, const void *b) {
 
 Test(dynamic_arrays, contains_cmp_key_value_map) {
 	with_borrow(alloc) {
-		kv_pair_t *map = make_arr(kv_pair_t, alloc, .initial_capacity = 10);
+		kv_pair_t *map = arr_make(kv_pair_t, alloc, .initial_capacity = 10);
 		
 		// Add some key-value pairs
 		arr_append(map, ((kv_pair_t){.key = 1, .value = "one"}));
@@ -176,7 +176,7 @@ Test(dynamic_arrays, contains_cmp_key_value_map) {
 
 Test(dynamic_arrays, get_valid_indices) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc);
+		int *arr = arr_make(int, alloc);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		arr_append(arr, 30);
@@ -191,7 +191,7 @@ Test(dynamic_arrays, get_valid_indices) {
 
 Test(dynamic_arrays, set_valid_indices) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc);
+		int *arr = arr_make(int, alloc);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		arr_append(arr, 30);
@@ -208,7 +208,7 @@ Test(dynamic_arrays, set_valid_indices) {
 
 Test(dynamic_arrays, get_out_of_bounds, .exit_code = 1) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc);
+		int *arr = arr_make(int, alloc);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		dyn_array_bounds_check_func( arr, 2, __FILE__, __LINE__, false);
@@ -217,7 +217,7 @@ Test(dynamic_arrays, get_out_of_bounds, .exit_code = 1) {
 
 Test(dynamic_arrays, set_out_of_bounds, .exit_code = 1) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc);
+		int *arr = arr_make(int, alloc);
 		arr_append(arr, 10);
 		arr_append(arr, 20);
 		
@@ -227,7 +227,7 @@ Test(dynamic_arrays, set_out_of_bounds, .exit_code = 1) {
 
 Test(dynamic_arrays, get_empty_array, .exit_code = 1) {
 	with_borrow(alloc) {
-		int *arr = make_arr(int, alloc);
+		int *arr = arr_make(int, alloc);
 		dyn_array_bounds_check_func( arr, 0, __FILE__, __LINE__, false);
 	}
 }

@@ -19,7 +19,7 @@ char *read_entire_file(const char *path, allocator_t allocator) {
 // Returns dynamic array, of fixed char strings.
 char **read_all_file_lines(const char *path, allocator_t allocator) {
 	char *contents = read_entire_file(path, allocator);
-	char **lines = make_arr(char*, allocator);
+	char **lines = arr_make(char*, allocator);
 	arr_append(lines, contents);
 	bool just_split = false;
 	for (char *c = contents; (*c)!='\0'; c++) {

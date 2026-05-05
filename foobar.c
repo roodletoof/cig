@@ -3,12 +3,15 @@
 
 int main(void) {
 	with_borrow(allocator) {
-		int *ints;
-		set_init(&ints, allocator, .initial_capacity=20);
-		map_print_mapping_state(ints, stdout);
-		for ( int i = 0; i < 100; i++ ) {
-			set_add(&ints, i);
-			map_print_mapping_state(ints, stdout);
+		int *s;
+		set_init(&s, allocator);
+		map_print_mapping_state((void*)s, stdout);
+		fflush(stdout);
+
+		for (int i = 0; i < 10; i++) {
+			set_add(&s, 1);
+			map_print_mapping_state((void*)s, stdout);
+			fflush(stdout);
 		}
 	}
 }

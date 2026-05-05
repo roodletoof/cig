@@ -1,3 +1,4 @@
 tags
 *.un~
 /foobar
+/foobar-expanded.c
