@@ -234,7 +234,7 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 	// The reason for re-hashing is that all hashes are moduloed by the
 	// size of the mapping array, so the resulting hash will likely change.
 	for ( unsigned int i = 0; i < header->n_items; i++ ) {
-		void *pair = &(*this)[i*header->item_size];
+		void *pair = &((uint8_t *)(*this))[i*header->item_size];
 		// This is okay, because we absolutely know that the keys don't already
 		// exist. (assuming all the other code for map is doing it's job)
 

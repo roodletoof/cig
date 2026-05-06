@@ -5,26 +5,32 @@ LDFLAGS := if os() == "macos" {
 } else {
     "-lcriterion"
 }
-TESTBIN := "/tmp/all_tests"
+
+TMP := "/tmp"
+
+TESTBIN := TMP/"all_tests"
 
 set shell := ["bash", "-cu"]
 
+
 FOOBAR := "foobar"
 FOOBAR_SOURCE := FOOBAR+".c"
-FOOBAR_EXPANDED := FOOBAR+"-expanded.c"
+FOOBAR_BIN := TMP/FOOBAR
+FOOBAR_EXPANDED := TMP/FOOBAR+"-expanded.c"
 
 run_foobar: build_foobar
-    ./{{FOOBAR}}
+    ./{{FOOBAR_BIN}}
 
 build_foobar: foobar_expanded
-    {{CC}} {{FOOBAR_EXPANDED}} -o {{FOOBAR}} {{CFLAGS}}
+    {{CC}} {{FOOBAR_EXPANDED}} -o {{FOOBAR_BIN}} {{CFLAGS}}
+    echo "{{FOOBAR_BIN}}"
 
 foobar_expanded:
     {{CC}} -P -E {{FOOBAR_SOURCE}} -o {{FOOBAR_EXPANDED}}
     clang-format -i {{FOOBAR_EXPANDED}}
 
 clean_foobar:
-    rm {{FOOBAR}}
+    rm {{FOOBAR_BIN}}
 
 [default]
 test: build
