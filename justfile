@@ -1,4 +1,4 @@
-CC := "cc"
+CC := "zig cc"
 CFLAGS := "-pedantic -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline"
 LDFLAGS := if os() == "macos" {
     "$(pkg-config --libs --cflags criterion)"
@@ -18,11 +18,14 @@ FOOBAR_SOURCE := FOOBAR+".c"
 FOOBAR_BIN := TMP/FOOBAR
 FOOBAR_EXPANDED := TMP/FOOBAR+"-expanded.c"
 
+build_foobar2:
+    {{CC}} {{FOOBAR_SOURCE}} {{CFLAGS}} -o foobar2
+
 run_foobar: build_foobar
-    ./{{FOOBAR_BIN}}
+    {{FOOBAR_BIN}}
 
 build_foobar: foobar_expanded
-    {{CC}} {{FOOBAR_EXPANDED}} -o {{FOOBAR_BIN}} {{CFLAGS}}
+    {{CC}} {{FOOBAR_EXPANDED}} {{CFLAGS}} -o {{FOOBAR_BIN}}
     echo "{{FOOBAR_BIN}}"
 
 foobar_expanded:

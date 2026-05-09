@@ -179,6 +179,7 @@ index_pair_t map_pair_hash(void *this, void *pair) {
 		mapping_index = (mapping_index + 1) % header->mapping_capacity;
 		existing_value_index = header->mapping_arr[mapping_index];
 	}
+	// TODO FUCKING IDIOT! has_old_index is set to true for NO REASON. Why???
 
 	// Whatever is at index is either free, or the key is already in the map.
 	//
@@ -234,7 +235,7 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 	// The reason for re-hashing is that all hashes are moduloed by the
 	// size of the mapping array, so the resulting hash will likely change.
 	for ( unsigned int i = 0; i < header->n_items; i++ ) {
-		void *pair = &((uint8_t *)(*this))[i*header->item_size];
+		void *pair = &(((uint8_t *)(*this))[i*header->item_size]);
 		// This is okay, because we absolutely know that the keys don't already
 		// exist. (assuming all the other code for map is doing it's job)
 
