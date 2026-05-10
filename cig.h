@@ -306,9 +306,9 @@ void map_print_mapping_state(void *this, FILE *file);
 void map_assure_growable_by_1(void **this, const char *file, int line);
 
 typedef struct index_pair {
-	unsigned int new_index;
-	unsigned int old_index;
-	bool has_old_index;
+	unsigned int new_i_into_mapping;
+	unsigned int old_i_into_mapping;
+	bool has_old;
 } index_pair_t;
 /*
  * Hashes modulo the header->mapping_capacity. Will linearly probe until a free
@@ -316,7 +316,7 @@ typedef struct index_pair {
  * indicated in the return value, and the user is expected to overwrite the old
  * index with a tombstone if they are going to write a new value for that key.
  */
-index_pair_t map_pair_hash(void *this, void *pair);
+index_pair_t map_pair_hash(void *this, const uint8_t *pair);
 unsigned int map_place(void *this, index_pair_t idx_pair);
 
 // TODO: NOT DONE!!! FIRST try to get the existing in

@@ -17,12 +17,12 @@
 #define DEFAULT ESC "0m"
 #define COLORED(COLOR, TEXT) COLOR TEXT DEFAULT
 
-static int internal_map_mod(int a, int b) {
+static int __map_mod(int a, int b) {
     int r = a % b;
     if (r < 0) r += (b > 0 ? b : -b);
     return r;
 }
-#define mod(a, b) internal_map_mod(a, b)
+#define mod(a, b) __map_mod(a, b)
 
 void map_print_mapping_state(void *this, FILE *file) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
@@ -46,18 +46,18 @@ static inline unsigned int mapping_cap(unsigned int capacity) {
 	return capacity * 2;
 }
 
-typedef struct internal_map_sizes {
+typedef struct __map_sizes {
 	size_t header_bytes;
 	size_t mapping_arr_bytes;
-} internal_map_sizes_t;
+} __map_sizes_t;
 
-internal_map_sizes_t internal_map_sizes(size_t capacity, size_t item_size) {
+__map_sizes_t __map_sizes(size_t capacity, size_t item_size) {
 	const size_t header_bytes = sizeof(map_header_t) + item_size * capacity;
 	map_header_t foo;
 	// TODO: this is shit. I am defining that the mapping arr is 2x the size of
 	// the items arr in multiple places. Figure this out at some point.
 	const size_t mapping_arr_bytes = sizeof(*foo.mapping_arr) * capacity * 2;
-	return (internal_map_sizes_t){
+	return (__map_sizes_t){
 		.header_bytes=header_bytes,
 		.mapping_arr_bytes=mapping_arr_bytes,
 	};
@@ -66,7 +66,7 @@ internal_map_sizes_t internal_map_sizes(size_t capacity, size_t item_size) {
 void *map_create_func(
 	map_create_func_args_t args
 ) {
-	internal_map_sizes_t sizes = internal_map_sizes(
+	__map_sizes_t sizes = __map_sizes(
 		args.initial_capacity,
 		args.item_size
 	);
@@ -100,9 +100,8 @@ void *map_create_func(
 	return header->bytes;
 }
 
-static const uint8_t *internal_cig_key_ptr_from_pair_ptr(const void *this, const void *pair) {
-	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	return (const uint8_t *) (&((const char *)pair)[header->key_offset]);
+static const uint8_t *__cig_key_ptr_from_pair_ptr(const map_header_t *this, const uint8_t *pair) {
+	return (const uint8_t *) (&pair[this->key_offset]);
 }
 
 // TODO: just make these internal probably
@@ -121,12 +120,12 @@ bool map_key_equals(void *this, const void *key1, const void *key2) {
 	return true;
 }
 
-unsigned int map_place(void *this, index_pair_t idx_pair) {
+unsigned int map_place(void *this, index_pair_t idx) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	if (idx_pair.has_old_index) {
-		header->mapping_arr[idx_pair.new_index] = header->mapping_arr[idx_pair.old_index];
-		header->mapping_arr[idx_pair.old_index] = FLAG_TOMBSTONE;
-		for ( long i = idx_pair.old_index; i != idx_pair.new_index; mod(i-1, header->mapping_capacity) ) {
+	if (idx.has_old) {
+		header->mapping_arr[idx.new_i_into_mapping] = header->mapping_arr[idx.old_index];
+		header->mapping_arr[idx.old_index] = FLAG_TOMBSTONE;
+		for ( long i = idx.old_index; i != idx.new_i_into_mapping; mod(i-1, header->mapping_capacity) ) {
 			if (header->mapping_arr[i] == FLAG_TOMBSTONE) {
 				header->mapping_arr[i] = FLAG_FREE;
 			} else {
@@ -134,75 +133,61 @@ unsigned int map_place(void *this, index_pair_t idx_pair) {
 			}
 		}
 	} else {
-		header->mapping_arr[idx_pair.new_index] = header->n_items;
+		header->mapping_arr[idx.new_i_into_mapping] = header->n_items;
 		header->n_items++;
 	}
 
-	return header->mapping_arr[idx_pair.new_index];
+	return header->mapping_arr[idx.new_i_into_mapping];
 }
 
-index_pair_t map_pair_hash(void *this, void *pair) {
+static uint32_t __map_hash_key_into_mapping_i(const map_header_t *header, const uint8_t *key) {
+	if (header->hash != NULL) {
+		return header->hash(key) % header->mapping_capacity;
+	} else {
+		return fnv_1a(key, header->key_size) % header->mapping_capacity;
+	}
+}
+
+typedef struct pair {
+	const uint8_t *pair;
+	const size_t pair_len;
+	const uint8_t *key;
+	const size_t key_len;
+} pair_t;
+
+static pair_t __map_get_pair_at(const map_header_t *this, size_t index) {
+	const uint8_t *pair = (uint8_t*)(&this->bytes[index * this->item_size]);
+	const size_t pair_len = this->item_size;
+	const uint8_t *key = __cig_key_ptr_from_pair_ptr(this, pair);
+	const size_t key_len = this->key_size;
+	return (pair_t) {
+		.pair=pair,
+		.pair_len=pair_len,
+		.key=key,
+		.key_len=key_len,
+	};
+}
+
+index_pair_t map_pair_hash(void *this, const uint8_t *pair) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
-	const uint8_t *key = internal_cig_key_ptr_from_pair_ptr(this, pair);
+	const uint8_t *new_key = __cig_key_ptr_from_pair_ptr(header, pair);
 
 	// find the initial index based on hash
-	uint32_t mapping_index;
-	if (header->hash != NULL) {
-		mapping_index = header->hash(key) % header->mapping_capacity;
-	} else {
-		mapping_index = fnv_1a(key, header->key_size) % header->mapping_capacity;
-	}
-	uint32_t tombstone_index;
-	bool found_tombstone = false;
+	uint32_t i_into_mapping = __map_hash_key_into_mapping_i(header, new_key);
 
-	// begin probing
-	int existing_value_index = header->mapping_arr[mapping_index];
-	while (
-			existing_value_index != FLAG_FREE &&
-			!map_key_equals(
-				this,
-				internal_cig_key_ptr_from_pair_ptr(
-					this,
-					&header->bytes[existing_value_index * header->item_size]
-				),
-				key
-			)
-		) {
-
-
-		const bool is_tombstone = existing_value_index == FLAG_TOMBSTONE;
-		if ((!found_tombstone) && is_tombstone) {
-			tombstone_index = mapping_index;
-			found_tombstone = true;
-		}
-
-		mapping_index = (mapping_index + 1) % header->mapping_capacity;
-		existing_value_index = header->mapping_arr[mapping_index];
-	}
-	// TODO FUCKING IDIOT! has_old_index is set to true for NO REASON. Why???
-
-	// Whatever is at index is either free, or the key is already in the map.
-	//
-	// If the key is already in the map, we instead want to use the earliest
-	// tombstone index we found, if we found one.
-	//
-	// But this also means that we have to know to set the existing mapping
-	// slot to a tombstone value at the time where we insert the key-value
-	// pair.
-
-	if (found_tombstone) {
+	int existing_i_into_bytes = header->mapping_arr[i_into_mapping];
+	if (existing_i_into_bytes == FLAG_FREE) {
 		return (index_pair_t) {
-			.has_old_index=true,
-			.new_index=tombstone_index,
-			.old_index=mapping_index,
-		};
-	} else {
-		return (index_pair_t) {
-			.has_old_index=false,
-			.new_index=mapping_index,
+			.has_old=false,
+			.new_i_into_mapping=i_into_mapping,
 		};
 	}
+	map_key_equals(this, const void *key1, const void *key2);
+	TODO this
 }
+
+// TODO: search all occurances of **this. The whole point is to reassign to the
+// variable!
 
 void map_assure_growable_by_1(void **this, const char *file, int line) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, *this);
@@ -216,7 +201,7 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 	if (header->capacity > 0) {
 		new_capacity = header->capacity * 2;
 	}
-	internal_map_sizes_t new_size = internal_map_sizes(
+	__map_sizes_t new_size = __map_sizes(
 		new_capacity,
 		header->item_size
 	);
@@ -244,9 +229,11 @@ void map_assure_growable_by_1(void **this, const char *file, int line) {
 		// TODO!!!
 		// TODO!!!
 		// TODO!!!
-		unsigned int mapping_index = map_pair_hash(*this, pair).new_index;
+		unsigned int mapping_index = map_pair_hash(*this, pair).new_i_into_mapping;
 		header->mapping_arr[mapping_index] = i;
 	}
+
+	// TODO!!!! FUCKING reasign to *this IDIOT!
 }
 
 uint32_t fnv_1a(const uint8_t *bytes, const unsigned int size) {
