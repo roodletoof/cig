@@ -1,38 +1,129 @@
-# ISSUES
-When a memory bug is detected in one of the treads it won't report a non-zero
-exit code while running the tests.
+# what is the goal?
+- A standard library inspired by languages like zig, odin and rust.
+- Single header, multiple source files, and no build step.
 
-# A collection of libraries inspired by zig, and other stuff.
+# current and coming features
 
-I like zig, but I really like writing C. I am starting with implementing
-different allocator types. I don't know how the other parts of the library will
-fit in, but they will certainly use the allocators. 
+- [x] allocators
+- [x] dynamic arrays
+- [x] simple cli arg parsing
+- [-] functions to build parsers
+- [-] string builder
+- [ ] hashmap
+- [ ] easing functions
+- [ ] simple gui engine
 
-I want a series of standard collection types with nice interfaces. ArrayLists,
-LinkedLists, value-based HashMaps, reference-based HashMaps.
+# example
 
-I also want to provide template header files that use the X-macro pattern so
-that users can easily make tagged unions, option types, automatic bit-flags,
-and maybe even an ECS inspierd struct filled with optional fields.
+## allocators and dynamic arrays
+```c
+#include <stdio.h>
+#include <stdbool.h>
 
-I probably want a ui library. It will rely on a graphical drawing interface. It
-will be a little different though. It is inspired from my experience with using
-raygui. instead of making some sort of layout engine, I will provide a set of
-useful functions to manipulate rectangles. I think this produces programs that
-are easier to reason about, while still reducing needless duplication of code.
-The workflow relies heavily on function-static variables, which are a c
-superpower in this scenario. You will essentially start with some 'fixed'
-rectangle (probably derived from the window size) and then perform splitting
-operations on that rectangle. Even a dynamic split that creates a draggable
-border, updating the local function-static variable (which is a normalized
-float) to let you resize sections. Also, the interface will be like immediate
-mode guis, with one exception from the way raygui works. The drawing operations
-are deferred, and called in the reverse order. This way the first gui function
-that captrues input can signal to the other function that input is captured,
-and the drawing of the gui elements can reflect the priority of the gui
-functions. Overlapping gui elements in raygui is the main painpoint imo.
+#define CIG_IMPL
+#include "cig/cig.h"
 
-# TODO
+int main(void) {
 
-If there is an allocation error it does not actually cause a crash...
-FIX!!!
+    with_borrow(allocator) {
+        // initial capacity is optional
+        int *ns = make_arr(int, allocator, .initial_capacity=10);
+
+        for (int i = 0; i < 100; i++) {
+            // the array grows as the capacity is reached
+            arr_append(ns, i);
+        }
+
+        for (int i = 0; i < 10; i++) {
+            int last = arr_pop(ns);
+            printf("last value was %d\n", last);
+        }
+
+        for (int i = 0; i < arr_len(ns); i++) {
+            printf("value of ns[%d] is %d\n", i, ns[i]);
+        }
+
+        // you can break out of a with_borrow scope
+        break;
+
+        printf("this is never printed\n");
+
+        // WARNING: returning from within a with_borrow
+        // scope will cause a memory leak
+        return;
+    }
+    // everything allocated by the borrow allocator is
+    // freed here, and the borrow allocator is also out of
+    // scope.
+
+
+    // you can also make the borrow allocator like this:
+    allocator_t backing = borrow_allocator_create();
+
+    // this arena allocator is slightly clever. You assign
+    // an initial size of the memory block, but uses a
+    // backing arena to allow you to allocate more than
+    // that. Whenever allocator_reset is called it figures
+    // out how much was allocated outside the big chunk of
+    // memory, frees everything and allocates a bigger
+    // block. So it's size will move towards what you
+    // happen to use in the game loop. It assumes that it
+    // is the owner of the given backing allocator, and it
+    // should probably be a borrow_allocator.
+    allocator_t arena_allocator = arena_allocator_create(backing, 100 * MB);
+
+    // Imagine a game loop
+    while (true) {
+        // every time this resets, assuming the backing
+        // memory chunk doesn't need to grow, this
+        // operation is very fast.
+        allocator_reset(arena_allocator);
+
+        float *fs = make_arr(float, arena_allocator);
+        arr_append(fs, 1.1);
+        arr_append(fs, 1.2);
+        arr_append(fs, 1.3);
+
+        break;
+    }
+
+    allocator_reset(backing);
+    return 0;
+}
+```
+
+## cli
+```c
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+#define CIG_IMPL
+#include "cig/cig.h"
+
+int main(int argc, const char **argv) {
+    args_t args = cli_make_args(argc, argv);
+
+    if (cli_command(&args, "say-foo")) {
+        printf("foo\n");
+    } else
+    if (cli_command(&args, "say-bar")) {
+        printf("bar\n");
+    } else
+    if (cli_command(&args), "greet") {
+        bool do_nothing = cli_bool(args, "--do-nothing");
+        const char *name = cli_req_str(args, "--name");
+        if (args.help) exit(0);
+
+        if (do_nothing) {
+            return;
+        }
+
+        printf("Hello %s!\n", name);
+    } else {
+        printf("use the -h or --help flag to see available commands\n");
+    }
+}
+
+```
+
