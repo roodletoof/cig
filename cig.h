@@ -239,16 +239,16 @@ typedef unsigned int (*key_hash_func_t)(const void *key);
 typedef bool (*key_equals_func_t)(const void *key1, const void *key2);
 
 typedef struct map_header {
-	unsigned int capacity;
-	unsigned int item_size;
-	unsigned int key_size;
-	unsigned int mapping_capacity;
-	unsigned int n_items;
-	unsigned int key_offset;
+	uint32_t capacity;
+	uint32_t item_size;
+	uint32_t key_size;
+	uint32_t mapping_capacity;
+	uint32_t n_items;
+	uint32_t key_offset;
 	allocator_t allocator;
 	key_hash_func_t hash;
 	key_equals_func_t equals;
-	int *mapping_arr;
+	int32_t *mapping_arr;
 	union {
 		uint8_t bytes[1];
 		any_align_t _[1];
@@ -317,14 +317,19 @@ typedef struct index_pair {
  * index with a tombstone if they are going to write a new value for that key.
  */
 index_pair_t map_pair_hash(void *this, const uint8_t *pair);
+bool map_key_equals(map_header_t *header, const uint8_t *key1_bytes, const uint8_t *key2_bytes);
 unsigned int map_place(void *this, index_pair_t idx_pair);
+
+// Exists to take a hash of a key and modulo it so it fits within the maps
+// capacity.
+uint32_t map_mod_index(const map_header_t *header, uint32_t i);
 
 // TODO: NOT DONE!!! FIRST try to get the existing in
 #define set_add(THIS, VALUE) do { \
 	map_assure_growable_by_1((void**)THIS, __FILE__, __LINE__); \
 	unsigned int len = map_len(*(THIS)); \
 	(*(THIS))[len] = VALUE; \
-	index_pair_t idx_pair = map_pair_hash((*(THIS)), &(*(THIS))[len]); \
+	index_pair_t idx_pair = map_pair_hash((*(THIS)), (const uint8_t*) (&(*(THIS))[len])); \
 	(*(THIS))[map_place((*(THIS)), idx_pair)] = VALUE; \
 } while (0)
 

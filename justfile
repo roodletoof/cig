@@ -1,5 +1,5 @@
 CC := "zig cc"
-CFLAGS := "-pedantic -Wall -Wextra -Wno-override-init -O0 -g -fno-omit-frame-pointer -fno-inline"
+CFLAGS := "-pedantic -Wall -Wextra -Wno-override-init -O0 -g3 -fno-omit-frame-pointer -fno-inline -fsanitize=address,undefined -fno-sanitize-recover=all"
 LDFLAGS := if os() == "macos" {
     "$(pkg-config --libs --cflags criterion)"
 } else {
@@ -12,9 +12,11 @@ TESTBIN := TMP/"all_tests"
 
 set shell := ["bash", "-cu"]
 
+RUNNER := if os() == "linux" { "valgrind" } else { "" }
+
 [default]
 test: build
-    {{TESTBIN}}
+    {{RUNNER}} {{TESTBIN}}
 
 test_memcheck: build
     valgrind --leak-check=full \
@@ -28,6 +30,8 @@ build:
 
 DEPENDENCY_HEADERS := if os() == "macos" {
     "$(pkg-config --cflags-only-I criterion | sed 's/-I//g')"
+} else if os() == "linux" {
+    "/usr/include/"
 } else {
     "TODO"
 }

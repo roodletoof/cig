@@ -17,12 +17,9 @@
 #define DEFAULT ESC "0m"
 #define COLORED(COLOR, TEXT) COLOR TEXT DEFAULT
 
-static int __map_mod(int a, int b) {
-    int r = a % b;
-    if (r < 0) r += (b > 0 ? b : -b);
-    return r;
+uint32_t map_mod_index(const map_header_t *header, uint32_t i) {
+    return i % header->mapping_capacity;
 }
-#define mod(a, b) __map_mod(a, b)
 
 void map_print_mapping_state(void *this, FILE *file) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
@@ -104,14 +101,10 @@ static const uint8_t *__cig_key_ptr_from_pair_ptr(const map_header_t *this, cons
 	return (const uint8_t *) (&pair[this->key_offset]);
 }
 
-// TODO: just make these internal probably
-bool map_key_equals(void *this, const void *key1, const void *key2) {
-	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
+bool map_key_equals(map_header_t *header, const uint8_t *key1_bytes, const uint8_t *key2_bytes) {
 	if (header->equals != NULL) {
-		return header->equals(key1, key2);
+		return header->equals(key1_bytes, key2_bytes);
 	}
-	const char *key1_bytes = key1;
-	const char *key2_bytes = key2;
 	for ( unsigned int i = 0; i < header->key_size; i++ ) {
 		if (key1_bytes[i] != key2_bytes[i]) {
 			return false;
@@ -123,9 +116,9 @@ bool map_key_equals(void *this, const void *key1, const void *key2) {
 unsigned int map_place(void *this, index_pair_t idx) {
 	map_header_t *header = PTR_FROM_FIELD_PTR(map_header_t, bytes, this);
 	if (idx.has_old) {
-		header->mapping_arr[idx.new_i_into_mapping] = header->mapping_arr[idx.old_index];
-		header->mapping_arr[idx.old_index] = FLAG_TOMBSTONE;
-		for ( long i = idx.old_index; i != idx.new_i_into_mapping; mod(i-1, header->mapping_capacity) ) {
+		header->mapping_arr[idx.new_i_into_mapping] = header->mapping_arr[idx.old_i_into_mapping];
+		header->mapping_arr[idx.old_i_into_mapping] = FLAG_TOMBSTONE;
+		for ( long i = idx.old_i_into_mapping; i != idx.new_i_into_mapping; map_mod_index(header, i-1) ) {
 			if (header->mapping_arr[i] == FLAG_TOMBSTONE) {
 				header->mapping_arr[i] = FLAG_FREE;
 			} else {
@@ -182,8 +175,7 @@ index_pair_t map_pair_hash(void *this, const uint8_t *pair) {
 			.new_i_into_mapping=i_into_mapping,
 		};
 	}
-	map_key_equals(this, const void *key1, const void *key2);
-	TODO this
+	// TODO THIS!!
 }
 
 // TODO: search all occurances of **this. The whole point is to reassign to the
