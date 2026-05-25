@@ -35,5 +35,8 @@ DEPENDENCY_HEADERS := if os() == "macos" {
 }
 
 tag:
+    ctags --languages=c --langmap=c:.c.h -R .
+
+tag-all:
     echo "Making tags from project and headers in {{DEPENDENCY_HEADERS}}"
     ctags --languages=c --langmap=c:.c.h -R {{DEPENDENCY_HEADERS}} .
