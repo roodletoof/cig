@@ -12,11 +12,9 @@ TESTBIN := TMP/"all_tests"
 
 set shell := ["bash", "-cu"]
 
-RUNNER := if os() == "linux" { "valgrind" } else { "" }
-
 [default]
 test: build
-    {{RUNNER}} {{TESTBIN}}
+    {{TESTBIN}}
 
 test_memcheck: build
     valgrind --leak-check=full \
