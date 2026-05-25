@@ -133,11 +133,11 @@ unsigned int map_place(void *this, index_pair_t idx) {
 	return header->mapping_arr[idx.new_i_into_mapping];
 }
 
-static uint32_t __map_hash_key_into_mapping_i(const map_header_t *header, const uint8_t *key) {
+uint32_t map_hash_key(const map_header_t *header, const uint8_t *key) {
 	if (header->hash != NULL) {
-		return header->hash(key) % header->mapping_capacity;
+		return map_mod_index(header, header->hash(key));
 	} else {
-		return fnv_1a(key, header->key_size) % header->mapping_capacity;
+		return map_mod_index(header, fnv_1a(key, header->key_size));
 	}
 }
 
@@ -166,7 +166,7 @@ index_pair_t map_pair_hash(void *this, const uint8_t *pair) {
 	const uint8_t *new_key = __cig_key_ptr_from_pair_ptr(header, pair);
 
 	// find the initial index based on hash
-	uint32_t i_into_mapping = __map_hash_key_into_mapping_i(header, new_key);
+	uint32_t i_into_mapping = map_hash_key(header, new_key);
 
 	int existing_i_into_bytes = header->mapping_arr[i_into_mapping];
 	if (existing_i_into_bytes == FLAG_FREE) {

@@ -235,7 +235,7 @@ void arr_qsort(void *this, dyn_array_cmp_fn cmp_fn);
 
 // maps ////////////////////////////////////////////////////////////////////
 
-typedef unsigned int (*key_hash_func_t)(const void *key);
+typedef uint32_t (*key_hash_func_t)(const void *key);
 typedef bool (*key_equals_func_t)(const void *key1, const void *key2);
 
 typedef struct map_header {
@@ -323,6 +323,7 @@ unsigned int map_place(void *this, index_pair_t idx_pair);
 // Exists to take a hash of a key and modulo it so it fits within the maps
 // capacity.
 uint32_t map_mod_index(const map_header_t *header, uint32_t i);
+uint32_t map_hash_key(const map_header_t *header, const uint8_t *key);
 
 // TODO: NOT DONE!!! FIRST try to get the existing in
 #define set_add(THIS, VALUE) do { \
