@@ -259,4 +259,8 @@ int map_cap_func(void *this) {
 
 #undef FLAG_FREE
 #undef FLAG_TOMBSTONE
+#undef ESC
+#undef RED
+#undef DEFAULT
+#undef COLORED
 
